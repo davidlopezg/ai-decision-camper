@@ -52,85 +52,143 @@
   <main id="main">
 
     <!-- ============================================
-         BLOQUE 1 · QUÉ ES  (HERO + PROBLEMA)
+         BLOQUE 1 · HERO  (texto + mini mockup protagonista)
          ============================================ -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="container">
-        <p class="eyebrow">Asistente experto en equipamiento camper</p>
-        <h1 id="hero-title">
-          Te recomendamos qué comprar<br>
-          y <em>por qué</em>. Sin venderte nada.
-        </h1>
-        <p class="hero-sub">
-          Cuéntanos qué tienes, qué quieres y cuánto quieres gastar.
-          Te devolvemos una configuración completa, explicada y justificada —
-          con lo que descartamos y por qué.
-        </p>
-        <div class="hero-cta">
-          <a href="#ejemplo" class="btn btn-primary btn-lg">Ver cómo decidimos</a>
-        </div>
-      </div>
-    </section>
+        <div class="hero-inner">
 
-    <section class="pain" aria-labelledby="pain-title">
-      <div class="container">
-        <h2 id="pain-title" class="section-title">El problema que conocemos</h2>
-        <div class="pain-grid">
-          <article class="pain-card">
-            <p class="pain-num">01</p>
-            <h3>Te han recomendado productos sueltos</h3>
-            <p>En una tienda o en un vídeo te dicen "compra esta nevera, esta esta solar" — pero nadie te asegura que los componentes encajen entre sí para tu caso.</p>
-          </article>
-          <article class="pain-card">
-            <p class="pain-num">02</p>
-            <h3>Amazon te da 20 opciones, no una decisión</h3>
-            <p>Tienes que filtrar, comparar specs, leer 200 reseñas y rezar. Nadie te dice cuál necesitas de verdad.</p>
-          </article>
-          <article class="pain-card">
-            <p class="pain-num">03</p>
-            <h3>Los blogs comparan, no deciden</h3>
-            <p>Te dicen "la A es mejor en X, la B en Y". Pero sigues sin saber qué poner en tu furgo concreta, con tu presupuesto.</p>
-          </article>
+          <div class="hero-text">
+            <p class="eyebrow">Asistente experto en equipamiento camper</p>
+            <h1 id="hero-title">
+              <span class="hero-line hero-line-accent">Dime qué necesitas.</span>
+              <span class="hero-line">Te diremos qué comprar.</span>
+              <span class="hero-line">Y te explicaremos por qué.</span>
+            </h1>
+            <p class="hero-sub">
+              Tu vehículo, tu presupuesto y tu uso. Te devolvemos una configuración
+              completa, explicada y justificada — con lo que descartamos y por qué.
+            </p>
+            <div class="hero-cta">
+              <a href="#ejemplo" class="btn btn-primary btn-lg">Ver cómo decidimos</a>
+            </div>
+          </div>
+
+          <aside class="hero-mockup" aria-label="Vista previa de una decisión del asistente">
+            <span class="mock-tag">Vista previa</span>
+
+            <div class="mock-block mock-input-block">
+              <p class="mock-h">Tu caso</p>
+              <p class="mock-case">Ford Transit · 2.500 € · todo el año · varios días sin red</p>
+            </div>
+
+            <div class="mock-block">
+              <p class="mock-h">Tu configuración</p>
+              <ul class="mock-config">
+                <li>
+                  <span class="mock-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="3" width="12" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="9" y="6" width="6" height="2" fill="currentColor"/><rect x="9" y="10" width="6" height="2" fill="currentColor"/></svg>
+                  </span>
+                  <div class="mock-body">
+                    <strong>LiFePO4 · 200 Ah</strong>
+                    <small>Mejor equilibrio autonomía/peso/coste para tu uso</small>
+                  </div>
+                  <span class="mock-tick">✓</span>
+                </li>
+                <li>
+                  <span class="mock-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 L12 5"/><path d="M12 19 L12 22"/><path d="M2 12 L5 12"/><path d="M19 12 L22 12"/><path d="M5 5 L7 7"/><path d="M17 17 L19 19"/><path d="M5 19 L7 17"/><path d="M17 7 L19 5"/></g></svg>
+                  </span>
+                  <div class="mock-body">
+                    <strong>Solar · 400 W</strong>
+                    <small>Cubre buena parte de tu consumo diario</small>
+                  </div>
+                  <span class="mock-tick">✓</span>
+                </li>
+                <li>
+                  <span class="mock-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="6" width="16" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 6 L8 18 M16 6 L16 18" stroke="currentColor" stroke-width="2"/></svg>
+                  </span>
+                  <div class="mock-body">
+                    <strong>Nevera compresor · 50 L</strong>
+                    <small>Compatible con el presupuesto y el sistema</small>
+                  </div>
+                  <span class="mock-tick">✓</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mock-block">
+              <p class="mock-h">Por qué encaja</p>
+              <ul class="mock-checks">
+                <li>Compatible con el resto del sistema</li>
+                <li>Dentro del presupuesto</li>
+                <li>Adecuado para uso continuado</li>
+              </ul>
+            </div>
+
+            <div class="mock-block">
+              <p class="mock-h">Descartamos</p>
+              <ul class="mock-crosses">
+                <li><span class="x">✕</span><span><strong>AGM 200 Ah</strong> — demasiado peso</span></li>
+                <li><span class="x">✕</span><span><strong>Solar 200 W</strong> — margen insuficiente</span></li>
+              </ul>
+            </div>
+          </aside>
+
         </div>
       </div>
     </section>
 
     <!-- ============================================
-         BLOQUE 2 · POR QUÉ ES DIFERENTE  (4 PROMESAS)
+         BLOQUE 1b · TRANSICIÓN
          ============================================ -->
+    <section class="bridge" aria-label="Transición">
+      <div class="container">
+        <h2 class="bridge-title">
+          No necesitas 20 opciones.<br>
+          <span class="bridge-accent">Necesitas una decisión.</span>
+        </h2>
+      </div>
+    </section>
+
+    <!-- ============================================
+         BLOQUE 2 · POR QUÉ ES DIFERENTE  (lista con la 3ª destacada)
+         ============================================================ -->
     <section class="promises" aria-labelledby="promises-title">
       <div class="container">
         <h2 id="promises-title" class="section-title">Por qué esto no es un blog ni un chatbot</h2>
-        <ul class="promise-grid">
-          <li class="promise-card">
-            <div class="promise-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="32" height="32"><path d="M4 6 L20 6 M4 12 L20 12 M4 18 L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <ol class="promise-stack">
+
+          <li class="promise">
+            <div class="promise-text">
+              <h3 class="promise-title">No vendemos.</h3>
+              <p>No tenemos inventario ni acuerdos con marcas. No cobramos por venderte nada.</p>
             </div>
-            <h3>Entendemos tu caso</h3>
-            <p>Te preguntamos por tu vehículo, tu autonomía, tu presupuesto y tu uso real. Sin formularios eternos, sin datos irrelevantes.</p>
           </li>
-          <li class="promise-card">
-            <div class="promise-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="32" height="32"><path d="M3 12 L9 6 L9 10 L21 10 L21 14 L9 14 L9 18 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+
+          <li class="promise">
+            <div class="promise-text">
+              <h3 class="promise-title">Multitienda.</h3>
+              <p>Comparamos opciones de distintos proveedores y te decimos dónde comprar cada cosa.</p>
             </div>
-            <h3>Cruzamos requisitos</h3>
-            <p>Comprobamos compatibilidades entre componentes, encaje con tu presupuesto y coherencia con tu patrón de uso antes de proponer nada.</p>
           </li>
-          <li class="promise-card">
-            <div class="promise-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="32" height="32"><rect x="4" y="4" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="4" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="13" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="13" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+
+          <li class="promise promise-featured">
+            <div class="promise-text">
+              <h3 class="promise-title">Decidimos.</h3>
+              <p>No te damos 20 productos para que elijas. Cruzamos tu caso con compatibilidades, presupuesto y patrón de uso, y elegimos los componentes que encajan contigo.</p>
             </div>
-            <h3>Proponemos una configuración</h3>
-            <p>Una sola propuesta coherente, no veinte productos sueltos. Porque equipar una camper es decidir un sistema, no comprar piezas.</p>
           </li>
-          <li class="promise-card">
-            <div class="promise-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="32" height="32"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7 L12 12 L16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+
+          <li class="promise">
+            <div class="promise-text">
+              <h3 class="promise-title">Te explicamos.</h3>
+              <p>Cada componente viene con el porqué de elegirlo y con las alternativas que hemos descartado y por qué.</p>
             </div>
-            <h3>Explicamos cada decisión</h3>
-            <p>Cada componente viene con el porqué de elegirlo y con las alternativas que hemos descartado y por qué. Trazable de principio a fin.</p>
           </li>
-        </ul>
+
+        </ol>
       </div>
     </section>
 
@@ -336,6 +394,32 @@
           <a href="guias/que-necesito-para-camperizar-furgo.html" class="btn btn-primary btn-lg">Quiero configurar mi camper</a>
         </div>
         <p class="cta-note">Cuando el asistente esté activo, este botón abrirá el configurador.</p>
+      </div>
+    </section>
+
+  <!-- ============================================
+         BLOQUE 8 · PROBLEMA (movido aquí, después del CTA)
+         ============================================================ -->
+    <section class="pain" aria-labelledby="pain-title">
+      <div class="container">
+        <h2 id="pain-title" class="section-title">Por qué nadie te lo ha resuelto antes</h2>
+        <div class="pain-grid">
+          <article class="pain-card">
+            <p class="pain-num">01</p>
+            <h3>Te han recomendado productos sueltos</h3>
+            <p>En una tienda o en un vídeo te dicen "compra esta nevera, esta placa solar" — pero nadie te asegura que los componentes encajen entre sí para tu caso.</p>
+          </article>
+          <article class="pain-card">
+            <p class="pain-num">02</p>
+            <h3>Amazon te da 20 opciones, no una decisión</h3>
+            <p>Tienes que filtrar, comparar specs, leer 200 reseñas y rezar. Nadie te dice cuál necesitas de verdad.</p>
+          </article>
+          <article class="pain-card">
+            <p class="pain-num">03</p>
+            <h3>Los blogs comparan, no deciden</h3>
+            <p>Te dicen "la A es mejor en X, la B en Y". Sigues sin saber qué poner en tu furgo concreta, con tu presupuesto.</p>
+          </article>
+        </div>
       </div>
     </section>
 
