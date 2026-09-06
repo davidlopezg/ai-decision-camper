@@ -170,15 +170,15 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.7rem;
   text-decoration: none;
   flex-shrink: 0;
 }
 .logo:hover { text-decoration: none; }
 
 .logo-mark {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   background: var(--color-accent);
   border-radius: 8px;
   display: grid;
@@ -191,7 +191,7 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
 
 .logo-word {
   font-weight: 700;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   color: var(--color-text);
   letter-spacing: -0.03em;
   line-height: 1;

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo · debug — versión implementada en el sitio</title>
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  body { padding-block: 2rem; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 1.5rem; }
+  .wrap h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .wrap > p { color: var(--color-muted); margin-bottom: 2rem; }
+  .context {
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .context-label {
+    background: var(--color-bg);
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-muted);
+    font-weight: 700;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .context-body {
+    padding: 1.25rem;
+    background: var(--color-surface);
+  }
+  .context-body.dark {
+    background: var(--color-text);
+    color: #fff;
+  }
+  .mockup-header {
+    background: var(--color-surface);
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mockup-header .nav {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.95rem;
+    color: var(--color-muted);
+  }
+  .compare {
+    background: var(--color-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+  }
+  .compare code {
+    background: rgba(0,0,0,0.05);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--color-text);
+  }
+  .context-body.dark code {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .check {
+    display: inline-block;
+    background: var(--color-accent-bg);
+    color: var(--color-accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.4rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Logo · versión implementada en el sitio</h1>
+  <p>Esta página replica el contexto exacto del header y footer del sitio, con el logo que está ahora mismo en producción.</p>
+
+  <div class="context">
+    <div class="context-label">Header (sobre fondo crema · 36px de alto)</div>
+    <div class="mockup-header">
+      <a href="#" class="logo">
+        <span class="logo-mark">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <circle cx="6" cy="6" r="2" fill="currentColor"/>
+            <circle cx="18" cy="6" r="2" fill="currentColor"/>
+            <circle cx="6" cy="18" r="2" fill="currentColor"/>
+            <circle cx="18" cy="18" r="2" fill="currentColor"/>
+            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="7.5" y1="7.5" x2="10" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="16.5" y1="7.5" x2="14" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="7.5" y1="16.5" x2="10" y2="14" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="16.5" y1="16.5" x2="14" y2="14" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          </svg>
+        </span>
+        <span class="logo-word">Camper<span class="logo-word-light">Decision</span></span>
+      </a>
+      <div class="nav"><span>Guías</span><span>Comparativas</span><span>Top productos</span></div>
+    </div>
+    <div class="compare">
+      <span class="check">CSS</span>
+      <code>.logo-mark { width: 36px; height: 36px; border-radius: 8px; }</code>
+      &nbsp;
+      <code>.logo-word { font-size: 1.35rem; letter-spacing: -0.03em; }</code>
+    </div>
+  </div>
+
+  <div class="context">
+    <div class="context-label">Footer (sobre fondo grafito oscuro · 36px de alto)</div>
+    <div class="context-body dark">
+      <a href="#" class="logo">
+        <span class="logo-mark">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <circle cx="6" cy="6" r="2" fill="currentColor"/>
+            <circle cx="18" cy="6" r="2" fill="currentColor"/>
+            <circle cx="6" cy="18" r="2" fill="currentColor"/>
+            <circle cx="18" cy="18" r="2" fill="currentColor"/>
+            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </span>
+        <span class="logo-word">Camper<span class="logo-word-light">Decision</span></span>
+      </a>
+    </div>
+    <div class="compare">
+      <span class="check">CSS</span>
+      <code>.site-footer .logo-word { color: #fff; }</code>
+      &nbsp;
+      <code>.site-footer .logo-word-light { color: #f5b89c; }</code>
+    </div>
+  </div>
+
+  <p style="margin-top:2rem; color:var(--color-muted); font-size: 0.9rem;">
+    Si lo que ves en esta página coincide con lo que ves en el sitio real, no hay problema — solo era caché.<br>
+    Si NO coincide, hay un problema de CSS y necesito que me digas qué estás viendo exactamente.
+  </p>
+</div>
+</body>
+</html>
