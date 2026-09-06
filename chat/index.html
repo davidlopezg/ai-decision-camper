@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente Camper Decision — Configura tu camper en 2 minutos</title>
+  <meta name="description" content="Asistente conversacional que te pregunta sobre tu furgoneta camper y te recomienda una configuración completa, explicada y justificada.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://davidlopezg.github.io/ai-decision-camper/chat/">
+  <link rel="stylesheet" href="../assets/styles.css">
+  <link rel="stylesheet" href="../assets/chat.css">
+</head>
+<body>
+
+  <a class="skip" href="#chat-main">Saltar al chat</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="../" class="logo" aria-label="Camper Decision · inicio">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+            <circle cx="6" cy="6" r="2" fill="currentColor"/>
+            <circle cx="18" cy="6" r="2" fill="currentColor"/>
+            <circle cx="6" cy="18" r="2" fill="currentColor"/>
+            <circle cx="18" cy="18" r="2" fill="currentColor"/>
+            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="7.5" y1="7.5" x2="10" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="16.5" y1="7.5" x2="14" y2="10" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="7.5" y1="16.5" x2="10" y2="14" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+            <line x1="16.5" y1="16.5" x2="14" y2="14" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          </svg>
+        </span>
+        <span class="logo-word">Camper<span class="logo-word-light">Decision</span></span>
+      </a>
+      <nav aria-label="Principal">
+        <ul class="nav">
+          <li><a href="../guias/">Guías</a></li>
+          <li><a href="../comparativas/">Comparativas</a></li>
+          <li><a href="../top/">Top productos</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="chat-main" class="chat-page">
+
+    <!-- ============ WELCOME ============ -->
+    <section id="chat-welcome" class="chat-view chat-view-active" aria-labelledby="chat-welcome-title">
+      <div class="container chat-container">
+        <p class="eyebrow">Asistente Camper Decision</p>
+        <h1 id="chat-welcome-title" class="chat-h1">
+          Te hago <span class="logo-word-light">5 preguntas</span> y te digo qué necesita tu camper.
+        </h1>
+        <p class="chat-lede">
+          Me cuentas tu vehículo, tu uso y tu presupuesto. Yo devuelvo una configuración
+          completa, explicada y justificada — con lo que descartamos y por qué.
+        </p>
+
+        <div class="chat-meta">
+          <div class="chat-meta-item">
+            <strong>5 preguntas</strong>
+            <small>Sin formularios eternos</small>
+          </div>
+          <div class="chat-meta-item">
+            <strong>~2 minutos</strong>
+            <small>Lo justo para decidir bien</small>
+          </div>
+          <div class="chat-meta-item">
+            <strong>Sin venta</strong>
+            <small>No vendemos, decidimos</small>
+          </div>
+        </div>
+
+        <div class="chat-cta">
+          <button id="chat-start" class="btn btn-primary btn-lg" type="button">Empezar conversación</button>
+          <a href="../" class="btn btn-ghost">Volver a la landing</a>
+        </div>
+
+        <p class="chat-disclaimer">
+          El asistente está en validación inicial. Tus respuestas se usan solo para generar la recomendación.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ QUESTIONS ============ -->
+    <section id="chat-questions" class="chat-view" aria-labelledby="chat-q-title">
+      <div class="container chat-container">
+        <div class="chat-progress" aria-hidden="true">
+          <div class="chat-progress-bar" id="chat-progress-bar"></div>
+        </div>
+        <p class="chat-progress-label" id="chat-progress-label">Pregunta 1 de 5</p>
+
+        <div class="chat-thread" id="chat-thread" aria-live="polite" aria-atomic="false">
+          <!-- Las preguntas y respuestas se inyectan aquí -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROCESSING ============ -->
+    <section id="chat-processing" class="chat-view" aria-labelledby="chat-processing-title">
+      <div class="container chat-container chat-processing-inner">
+        <div class="chat-spinner" aria-hidden="true"></div>
+        <h2 id="chat-processing-title">Procesando tu caso</h2>
+        <p id="chat-processing-step">Cruzando requisitos con el catálogo…</p>
+        <ul class="chat-processing-steps">
+          <li id="proc-step-1">Extrayendo requisitos</li>
+          <li id="proc-step-2">Filtrando productos</li>
+          <li id="proc-step-3">Cargando fichas técnicas</li>
+          <li id="proc-step-4">Generando recomendación</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ RESULT ============ -->
+    <section id="chat-result" class="chat-view" aria-labelledby="chat-result-title">
+      <div class="container chat-container">
+        <p class="eyebrow">Tu configuración recomendada</p>
+        <h1 id="chat-result-title" class="chat-h1">Esta es la configuración que encá con tu caso</h1>
+        <p class="chat-lede" id="chat-result-lede"></p>
+
+        <article class="chat-rec" id="chat-rec-body">
+          <!-- La recomendación se inyecta aquí -->
+        </article>
+
+        <div class="chat-cta">
+          <button id="chat-restart" class="btn btn-primary" type="button">Hacer otra consulta</button>
+          <a href="../" class="btn btn-ghost">Volver a la landing</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-col footer-brand">
+        <a href="../" class="logo" aria-label="Camper Decision · inicio">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
+              <circle cx="6" cy="6" r="2" fill="currentColor"/>
+              <circle cx="18" cy="6" r="2" fill="currentColor"/>
+              <circle cx="6" cy="18" r="2" fill="currentColor"/>
+              <circle cx="18" cy="18" r="2" fill="currentColor"/>
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
+          <span class="logo-word">Camper<span class="logo-word-light">Decision</span></span>
+        </a>
+        <p>Decidimos qué necesita tu camper, con explicación y sin venta.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explorar</h4>
+        <ul>
+          <li><a href="../guias/">Guías</a></li>
+          <li><a href="../comparativas/">Comparativas</a></li>
+          <li><a href="../top/">Top productos</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Proyecto</h4>
+        <ul>
+          <li><a href="https://github.com/davidlopezg/ai-decision-camper">Repositorio público</a></li>
+          <li><a href="../#ejemplo">Cómo decidimos</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-meta">
+      <p>Camper Decision es un proyecto personal. Algunos enlaces son de afiliado: si compras a través de ellos recibimos una pequeña comisión sin coste extra para ti. La comisión nunca decide la recomendación.</p>
+      <p class="footer-copy">© 2026 David López · ·</p>
+    </div>
+  </footer>
+
+  <script src="../assets/config.js"></script>
+  <script src="../assets/chat.js"></script>
+</body>
+</html>
