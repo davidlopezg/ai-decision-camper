@@ -12,7 +12,7 @@
   --color-border:    #e5dfd6;
   --color-border-2:  #d8d0c2;
   --color-text:      #2a2520;
-  --color-muted:     #6b6660;
+  --color-muted:     #525048;
   --color-accent:    #c4502b;
   --color-accent-d:  #9c3d20;
   --color-accent-bg: #fff3ec;
@@ -21,8 +21,8 @@
   --font-display: Georgia, "Times New Roman", "Iowan Old Style", "Apple Garamond", serif;
 
   --fs-base:  clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
-  --fs-sm:    clamp(0.875rem, 0.85rem + 0.15vw, 0.95rem);
-  --fs-xs:    0.8125rem;
+  --fs-sm:    clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --fs-xs:    0.875rem;
   --fs-h3:    clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
   --fs-h2:    clamp(1.625rem, 1.2rem + 1.8vw, 2.375rem);
   --fs-h1:    clamp(2.25rem, 1.4rem + 3.5vw, 4rem);
@@ -176,16 +176,49 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
   font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
+  flex-shrink: 0;
 }
 .logo:hover { text-decoration: none; }
 .logo-accent { color: var(--color-accent); }
-.nav { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.nav {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  margin-right: calc(-1 * var(--space-3));
+  padding-right: var(--space-3);
+}
+.nav::-webkit-scrollbar { display: none; }
 .nav a {
   color: var(--color-text);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  padding: 0.75rem 0.875rem;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: var(--radius);
 }
 .nav a:hover { color: var(--color-accent); text-decoration: none; }
+@media (min-width: 640px) {
+  .nav {
+    overflow-x: visible;
+    gap: var(--space-3);
+    margin-right: 0;
+    padding-right: 0;
+    flex-wrap: wrap;
+  }
+  .nav a {
+    padding: 0.5rem 0;
+    min-height: auto;
+    min-width: auto;
+  }
+}
 
 /* ===========================================================
    6. HERO  (Bloque 1 · texto + mockup protagonista)
@@ -306,18 +339,21 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
   flex-shrink: 0;
   color: var(--color-accent);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.125rem;
   align-self: center;
+  width: 22px;
+  text-align: center;
 }
 .mock-checks, .mock-crosses {
   display: grid;
   gap: 0.25rem;
 }
 .mock-checks li {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--color-text);
   padding-left: 1.25rem;
   position: relative;
+  padding-block: 0.125rem;
 }
 .mock-checks li::before {
   content: "✓";
@@ -325,17 +361,24 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
   left: 0;
   color: var(--color-accent);
   font-weight: 700;
+  font-size: 1rem;
 }
 .mock-crosses li {
-  font-size: 0.8125rem;
-  color: var(--color-muted);
+  font-size: 0.875rem;
+  color: var(--color-text);
   display: flex;
   align-items: flex-start;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  padding-block: 0.125rem;
 }
 .mock-crosses li .x {
-  color: var(--color-border-2);
+  color: var(--color-accent);
+  opacity: 0.55;
   font-weight: 700;
+  font-size: 1.125rem;
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
 }
 .mock-crosses strong { color: var(--color-text); font-weight: 600; margin-right: 0.25rem; }
 
@@ -527,15 +570,17 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
 .constraints {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 .constraints li {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  padding: 0.25rem 0.625rem;
+  padding: 0.5rem 1rem;
   border-radius: 999px;
-  font-size: 0.875rem !important;
-  color: var(--color-muted) !important;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .config { gap: 0.5rem; }
@@ -610,12 +655,13 @@ em { font-family: var(--font-display); font-style: italic; color: var(--color-ac
   align-items: flex-start;
 }
 .case-note {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--color-muted);
   background: var(--color-bg);
   padding: var(--space-2);
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
+  line-height: 1.55;
 }
 
 /* ===========================================================
