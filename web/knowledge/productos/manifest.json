@@ -1,0 +1,152 @@
+[
+  {
+    "id": "aislamiento-kaiflex",
+    "nombre": "Aislamiento Kaiflex 19mm",
+    "categoria": "confort"
+  },
+  {
+    "id": "bestek-1000w-onda-pura",
+    "nombre": "Bestek 1000W",
+    "categoria": "inversores"
+  },
+  {
+    "id": "bidon-flexible-20l",
+    "nombre": "Bidón flexible 20L",
+    "categoria": "agua"
+  },
+  {
+    "id": "calentador-gas-portatil",
+    "nombre": "Calentador de gas portátil",
+    "categoria": "confort"
+  },
+  {
+    "id": "campingaz-cv-470",
+    "nombre": "Campingaz CV 470 Plus",
+    "categoria": "cocina"
+  },
+  {
+    "id": "cocina-camper-plegable",
+    "nombre": "Cocina camper plegable",
+    "categoria": "cocina"
+  },
+  {
+    "id": "dometic-cfx3-45",
+    "nombre": "Dometic CFX3 45",
+    "categoria": "neveras"
+  },
+  {
+    "id": "dometic-cfx3-55",
+    "nombre": "Dometic CFX3 55",
+    "categoria": "neveras"
+  },
+  {
+    "id": "ducha-portatil-12v",
+    "nombre": "Ducha portátil 12V",
+    "categoria": "agua"
+  },
+  {
+    "id": "ecoflow-220w-bifacial",
+    "nombre": "EcoFlow 220W Bifacial",
+    "categoria": "placas"
+  },
+  {
+    "id": "engel-mt45f-s",
+    "nombre": "Engel MT45F-S",
+    "categoria": "neveras"
+  },
+  {
+    "id": "lifepo4-100ah-generica",
+    "nombre": "Batería LiFePO4 100Ah genérica",
+    "categoria": "baterias"
+  },
+  {
+    "id": "lifepo4-200ah-con-bms",
+    "nombre": "Batería LiFePO4 200Ah con BMS",
+    "categoria": "baterias"
+  },
+  {
+    "id": "mobicool-mcg15",
+    "nombre": "Mobicool MCG15",
+    "categoria": "neveras"
+  },
+  {
+    "id": "panel-solar-generico-100w-rigido",
+    "nombre": "Panel solar genérico 100W rígido",
+    "categoria": "placas"
+  },
+  {
+    "id": "pasacables-estanco-techo",
+    "nombre": "Pasacables estanco para techo",
+    "categoria": "instalacion"
+  },
+  {
+    "id": "plafon-led-tactil-12v",
+    "nombre": "Plafón LED táctil 12V",
+    "categoria": "iluminacion"
+  },
+  {
+    "id": "sikaflex-252",
+    "nombre": "Sikaflex 252",
+    "categoria": "instalacion"
+  },
+  {
+    "id": "tira-led-12v-5m",
+    "nombre": "Tira LED 12V 5m",
+    "categoria": "iluminacion"
+  },
+  {
+    "id": "varta-dual-purpose-agm-130ah",
+    "nombre": "Varta Dual Purpose AGM 130Ah",
+    "categoria": "baterias"
+  },
+  {
+    "id": "varta-dual-purpose-agm-95ah",
+    "nombre": "Varta Dual Purpose AGM 95Ah",
+    "categoria": "baterias"
+  },
+  {
+    "id": "ventana-dometic-s4",
+    "nombre": "Ventana Dometic S4",
+    "categoria": "confort"
+  },
+  {
+    "id": "victron-bluesolar-100w",
+    "nombre": "Victron Energy BlueSolar 100W",
+    "categoria": "placas"
+  },
+  {
+    "id": "victron-bluesolar-175w",
+    "nombre": "Victron BlueSolar 175W",
+    "categoria": "placas"
+  },
+  {
+    "id": "victron-bmv-712",
+    "nombre": "Victron BMV-712",
+    "categoria": "monitorizacion"
+  },
+  {
+    "id": "victron-cyrix-ct",
+    "nombre": "Victron Cyrix-ct 120A",
+    "categoria": "instalacion"
+  },
+  {
+    "id": "victron-phoenix-12-1200",
+    "nombre": "Victron Phoenix 12/1200",
+    "categoria": "inversores"
+  },
+  {
+    "id": "victron-phoenix-12-800",
+    "nombre": "Victron Phoenix 12/800",
+    "categoria": "inversores"
+  },
+  {
+    "id": "victron-smartsolar-75-15",
+    "nombre": "Victron SmartSolar 75/15",
+    "categoria": "monitorizacion"
+  },
+  {
+    "id": "webasto-air-top-2000",
+    "nombre": "Webasto Air Top 2000",
+    "categoria": "confort"
+  }
+]
