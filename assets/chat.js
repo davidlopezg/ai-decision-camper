@@ -298,24 +298,81 @@ Donde:
     }
   }
 
+  // ============== PRODUCT CATALOG ==============
+  // Categorías "human-readable" que devuelve el LLM (energia, frio, ...)
+  // → categorías técnicas del catálogo (placas, neveras, ...).
+  // Sirve para filtrar tanto en Supabase como en el manifest local.
+  const CATEGORY_MAP = {
+    'energia':     ['placas', 'baterias', 'inversores', 'monitorizacion'],
+    'frio':        ['neveras'],
+    'cocina':      ['cocina'],
+    'iluminacion': ['iluminacion'],
+    'agua':        ['agua'],
+    'calefaccion': ['confort'],
+    'confort':     ['confort'],
+    'instalacion': ['instalacion'],
+  };
+  function expandCategories(llmCats) {
+    if (!llmCats || llmCats.length === 0) return [];
+    const out = new Set();
+    for (const c of llmCats) {
+      if (CATEGORY_MAP[c]) CATEGORY_MAP[c].forEach(x => out.add(x));
+      else out.add(c); // por si coincide literal
+    }
+    return [...out];
+  }
+
+  // Cache del manifest local. Se usa como fallback cuando la tabla
+  // `productos` de Supabase está vacía (p.ej. antes de ejecutar el SQL
+  // inicial del proyecto). Se carga una sola vez por sesión.
+  let _manifest = null;
+  async function loadManifest() {
+    if (_manifest) return _manifest;
+    try {
+      const r = await fetch('../knowledge/productos/manifest.json');
+      if (!r.ok) throw new Error(`manifest HTTP ${r.status}`);
+      _manifest = await r.json();
+    } catch (e) {
+      console.warn('[chat] No se pudo cargar manifest local:', e);
+      _manifest = [];
+    }
+    return _manifest;
+  }
+
   // ============== SUPABASE: QUERY PRODUCTS ==============
   async function querySupabase(req) {
-    const params = new URLSearchParams();
-    params.set('select', '*');
-    params.set('disponible', 'eq.true');
-    if (req.categorias_interes && req.categorias_interes.length > 0) {
-      const cats = req.categorias_interes.map(c => `"${c}"`).join(',');
+    const techCats = expandCategories(req.categorias_interes);
+
+    // 1) Intentar Supabase (tabla productos con campos ricos)
+    let products = [];
+    if (techCats.length > 0) {
+      const params = new URLSearchParams();
+      params.set('select', '*');
+      params.set('disponible', 'eq.true');
+      const cats = techCats.map(c => `"${c}"`).join(',');
       params.set('categoria', `in.(${cats})`);
+      const url = `${CONFIG.SUPABASE_URL}/rest/v1/productos?${params}`;
+      try {
+        const r = await fetch(url, {
+          headers: {
+            'apikey': CONFIG.SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+          },
+        });
+        if (r.ok) products = await r.json();
+      } catch (e) {
+        console.warn('[chat] Supabase no disponible, usando manifest local:', e);
+      }
     }
-    const url = `${CONFIG.SUPABASE_URL}/rest/v1/productos?${params}`;
-    const r = await fetch(url, {
-      headers: {
-        'apikey': CONFIG.SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
-      },
-    });
-    if (!r.ok) throw new Error(`Supabase error ${r.status}`);
-    const products = await r.json();
+
+    // 2) Fallback: manifest local si Supabase no devolvió nada
+    if (products.length === 0) {
+      const manifest = await loadManifest();
+      products = manifest.filter(p =>
+        techCats.length === 0 || techCats.includes(p.categoria)
+      );
+    }
+
     return products.slice(0, 6);
   }
 
@@ -364,6 +421,7 @@ Instrucciones de salida (JSON estricto, sin markdown ni backticks):
 }
 
 REGLAS:
+- USA los nombres EXACTOS de los productos del catálogo. NO modifiques el nombre ni inventes marcas nuevas. Si el catálogo tiene "Dometic CFX3 45", devuelve "Dometic CFX3 45", no "nevera de compresor premium".
 - Recomendaciones concretas (tipo y categoría), NO inventes marcas reales.
 - NO inventes cifras exactas (ciclos, pesos, precios).
 - Si no estás seguro de una especificación, no la incluyas.
@@ -528,6 +586,6 @@ Reglas:
     if (restartBtn) restartBtn.addEventListener('click', () => {
       showView('welcome');
     });
-    console.log('[chat] iniciado. Supabase:', CONFIG.SUPABASE_URL, '· LLM via proxy server-side');
+    console.log('[chat] iniciado. Supabase:', CONFIG.SUPABASE_URL, '· LLM via proxy server-side · fallback a manifest local si Supabase vacío');
   });
 })();
