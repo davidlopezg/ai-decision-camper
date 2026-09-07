@@ -7,7 +7,7 @@
    - SUPABASE_URL + SUPABASE_ANON_KEY: Supabase → Settings → API
    - LLM_API_KEY: tu proveedor LLM (MiniMax)
    - LLM_ENDPOINT: endpoint base de la API
-   - LLM_MODEL: nombre del modelo (ej. "minimax-2.7")
+   - LLM_MODEL: nombre del modelo (ej. "MiniMax-M2.7")
    - AMAZON_TAG: Tracking ID de Amazon Associates
 */
 
@@ -19,7 +19,7 @@ const CONFIG = {
   // LLM (MiniMax)
   LLM_API_KEY: 'YOUR_LLM_API_KEY',
   LLM_ENDPOINT: 'https://api.YOUR_PROVIDER.com/v1',
-  LLM_MODEL: 'minimax-2.7',
+  LLM_MODEL: 'MiniMax-M2.7',
 
   // Afiliación
   AMAZON_TAG: 'camperdecisio-21',
