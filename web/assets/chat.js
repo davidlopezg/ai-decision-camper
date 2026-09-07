@@ -324,7 +324,7 @@
       }
     }
 
-    return { updates, notes, aparatoAdded };
+    return { updates, notes, aparatoAdded, maxApetito };
   }
 
   function normalizeVehiculo(v) {
@@ -353,12 +353,12 @@
   //  QUESTIONER — orden de prioridad (qué falta)
   // ====================================================================
   const QUESTION_ORDER = [
-    { key:'vehiculo',     ask: '¿Qué vehículo tienes? (modelo y, si lo sabes, año)' },
-    { key:'uso',          ask: '¿Patrón de uso principal? (finde, semanas sueltas, todo el año, nómada)' },
-    { key:'autonomia_dias', ask: '¿Cuántos días seguidos sin enchufar a la red vas a estar?' },
-    { key:'presupuesto_eur', ask: '¿Con qué presupuesto cuentas para el equipamiento? (orientativo)' },
-    { key:'personas',     ask: '¿Cuántas personas viajan normalmente?' },
-    { key:'aparatos',     ask: '¿Qué aparatos quieres usar? (nevera, microondas, cafetera, calefacción…)' },
+    { key:'vehiculo',       ask: '¿Qué furgo tienes o buscas? Si ya tienes el modelo, dímelo; si no, una idea general me vale.' },
+    { key:'uso',            ask: '¿Y el patrón de uso? Fines de semana, semanas sueltas, todo el año, o váis a ser nómadas digitales.' },
+    { key:'autonomia_dias', ask: 'Sin enchufe, ¿cuántos días seguidos soléis estar? ¿Tres, cinco?' },
+    { key:'presupuesto_eur', ask: '¿De presupuesto? Una cifra orientativa, no tiene que ser exacta.' },
+    { key:'personas',       ask: '¿Cuántos váis normalmente? ¿Dos, tres…?' },
+    { key:'aparatos',       ask: '¿Qué aparatos os harían falta? (nevera, microondas, cafetera, calefacción, AA, lo que sea.)' },
   ];
   function nextQuestion(state) {
     for (const q of QUESTION_ORDER) {
@@ -815,9 +815,12 @@
     setInputEnabled(true);
 
     if (mode === 'libre') {
-      addBot('<p>Hola. Te voy preguntando solo lo que necesito para proponerte una configuración a medida.</p><p>Cuenta tu caso con tus palabras: vehículo, gente, patrón de uso, presupuesto… como te salga.</p>');
+      addBot(naturalHello(true));
     } else {
-      addBot('<p>Hola. Te haré las preguntas una a una. Responde cuando quieras.</p>');
+      addBot(pickOne([
+        '<p>Hola. Te voy preguntando y tú respondes cuando quieras.</p>',
+        '<p>Hola. Te haré las preguntas una a una, sin prisa.</p>',
+      ]));
     }
 
     // Sugerencias rápidas para arrancar (solo en modo libre)
@@ -842,13 +845,13 @@
     document.getElementById('chat-text-input').value = '';
     setInputEnabled(true);
 
-    addBot('<p>Hola. Te muestro cómo quedaría el asistente con un caso típico ya rellenado. Si te encaja, sigue hasta el final. Si quieres cambiar algo, dime qué.</p>');
+    addBot(naturalExampleIntro());
     addUser('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.');
     interpretar('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.', state);
     state.configuracion_actual = state.configuracion_actual || 'desde_cero';
     state.confirmados = { vehiculo:true, uso:true, autonomia:true, presupuesto:true };
     setTimeout(() => {
-      addBot('Apuntado. Mostrando lo que he entendido y la configuración directamente. Puedes tocar cualquier cosa luego.');
+      addBot(naturalExample());
       addSummaryCard(state);
     }, 350);
   }
@@ -862,7 +865,7 @@
 
     setTimeout(() => {
       typing?.remove();
-      const { updates, aparatoAdded } = interpretar(texto, state);
+      const { updates, aparatoAdded, maxApetito } = interpretar(texto, state);
 
       // Caso especial: si viene como respuesta a "qué quieres corregir"
       if (state._correctionMode) {
@@ -877,7 +880,7 @@
         const field = state._changingField; state._changingField = null;
         const decision = decide(state);
         const prevDecision = state._prevDecision;
-        addBot(`Hecho. Recalculando con ${humanFieldName(field)} = ${humanValueFor(field, state)}…`);
+        addBot(naturalChangeMsg(field));
         renderDecisionDiff(prevDecision, decision, state, field);
         addChangeOptions(decision, state);
         setInputEnabled(true);
@@ -885,7 +888,7 @@
       }
 
       if (aparatoAdded) {
-        addBot(`Anotado: ${aparatoAdded.label}.`);
+        addBot(naturalAparatoMid(aparatoAdded));
         // Avisar si cambia la decisión
         if (!state._firstDecisionShown && isComplete(state)) {
           // sigue hasta confirmar resumen
@@ -893,7 +896,7 @@
           const prev = state._prevDecision;
           const next = decide(state);
           if (!sameDecision(prev, next)) {
-            addBot(`<p><strong>Eso cambia la configuración.</strong> ${explainDiff(prev, next, state)}</p>`);
+            addBot(microReactionAparato(aparatoAdded, prev, next, state));
             addResultCards(next, state);
             addChangeOptions(next, state);
             state._prevDecision = next;
@@ -902,13 +905,17 @@
           }
         }
       } else if (updates.length > 0) {
-        addBot(`Apuntado: ${humanStateDeltas(updates, state)}.`);
+        const ack = naturalAck(state, updates);
+        const react = microReaction(state, updates);
+        addBot([ack, react].filter(Boolean).join(' '));
+      } else if (maxApetito) {
+        addBot(naturalMaxApetito());
       } else {
-        addBot('No te he pillado bien. ¿Puedes reformular? Cuéntame sobre tu vehículo, cuántas personas, cómo lo vas a usar y tu presupuesto.');
+        addBot(naturalError(state));
       }
 
       if (isComplete(state)) {
-        addBot('Con eso ya tengo lo importante.');
+        addBot(naturalComplete());
         addSummaryCard(state);
       } else {
         askNextQuestion();
@@ -945,7 +952,7 @@
     state._firstDecisionShown = true;
     const dec = decide(state);
     state._prevDecision = dec;
-    addBot('Vale. Vamos allá.');
+    addBot(naturalConfirmSummary());
     addResultCards(dec, state);
     addChangeOptions(dec, state);
     setInputEnabled(true);
@@ -1016,7 +1023,7 @@
   }
   function afterCorrectionUpdate() {
     const prev = decide(state); // sólo para acumular, no enseñamos
-    addBot('Apuntado.');
+    addBot(pickOne(['Vale, hecho.', 'Anotado, sí.', 'OK.', 'Apuntado.']));
     state._prevDecision = prev;
     setTimeout(() => { onSummaryConfirmed(); setInputEnabled(true); }, 300);
   }
@@ -1060,19 +1067,217 @@
     addBot(html.join(''));
   }
 
-  function humanStateDeltas(updates, state) {
-    const map = {
-      vehiculo:        `vehículo ${state.vehiculo?.texto}`,
-      presupuesto_eur:  `presupuesto ${state.presupuesto_eur} €`,
-      personas:         `${state.personas} persona${state.personas === 1 ? '' : 's'}`,
-      uso:              { finde:'fines de semana', semanas:'semanas sueltas', nomada:'nómada', anual:'todo el año' }[state.uso] || state.uso,
-      autonomia_dias:   `${state.autonomia_dias} días de autonomía`,
-      configuracion_actual: state.configuracion_actual,
-      aparatos:         `aparatos: ${state.aparatos.map(a => (APARATOS.find(x=>x.id===a)||{label:a}).label).join(', ')}`,
-      prioridades:      `prioridades: ${state.prioridades.join(', ')}`,
-    };
-    return updates.filter(u => map[u]).map(u => map[u]).join(', ');
+  // ----- Generación de respuestas naturales (variadas, no formularios) -----
+  // Pools de frases para evitar el tono de script. La idea: cada turno usa
+  // UNA frase de un pool, no concatena campos como en una tabla de BD.
+  const ACKS = ['', '', '', '', '', '',
+    'Vale.', 'Ok.', 'Anotado.', 'A ver, sí.', 'Bien.', 'Hecho.', 'Sí.', 'OK.', 'Perfecto.', 'Vale, vale.'];
+  const DECIR_VEH = [
+    v => `Una ${v}.`,
+    v => `Ok, una ${v}.`,
+    v => `Vale, ${v}.`,
+    v => `${v}, anotado.`,
+    v => `Entendido, ${v}.`,
+    v => `Vale. ${v}.`,
+  ];
+  const DECIR_PERS = [
+    n => n === 1 ? 'Tú solo.' : n === 2 ? 'Sois dos.' : `Sois ${n}.`,
+    n => n === 1 ? 'Solo tú, vale.' : n === 2 ? 'Pareja entonces.' : `${n} personas, ok.`,
+    n => n === 1 ? 'Tú solo.' : n === 2 ? 'Dos, vale.' : `${n}, vale.`,
+    n => n === 1 ? 'Uno, vale.' : n === 2 ? 'Dos, sí.' : `${n}, anotado.`,
+  ];
+  const DECIR_USO = {
+    finde:   ['Finde, ok.', 'Fines de semana, vale.', 'Vale, finde.'],
+    semanas: ['Semanas sueltas, ok.', 'Vale, semanas sueltas.', 'Unas semanas de vez en cuando.'],
+    nomada:  ['Nómada, vale.', 'Vale, modo nómada.', 'Nómada digital, sí.'],
+    anual:   ['Todo el año, ok.', 'Vale. Todo el año.', 'Vale, uso intenso.'],
+  };
+  const DECIR_AUT = [
+    n => n === 1 ? 'Sin enchufe un día, vale.' : n === 2 ? 'Unas dos noches sin red, ok.' : `${n} días sin enchufe, vale.`,
+    n => `${n} días, ok.`,
+    n => `Sin red durante ${n} días, anotado.`,
+    n => `Vale, ${n} días fuera.`,
+  ];
+  const DECIR_PRES = [
+    p => p >= 4000 ? `${p} €, bien.` : p >= 2000 ? `${p} €, ok.` : p >= 1000 ? `${p} €, vale.` : `Con ${p} €, ajustamos.`,
+    p => `${p} €, anotado.`,
+    p => p >= 4000 ? `Vale, con ${p} € vamos bien.` : `Vale, ${p} € es justo pero se puede.`,
+  ];
+  const DECIR_MAX = [
+    'Vale, modo sin restricciones. Vamos a meter lo que entre.',
+    'Modo maximalista, ok. Veremos qué entra.',
+    'Vale, sin límites. Aprieta el cinturón del presupuesto.',
+    'Vale. Vamos a fondo con lo que quepa.',
+  ];
+  const DECIR_KILLER = {
+    microondas: 'Microondas, ojo. Eso son 1500 W de pico y obliga a revisar el inversor y la batería. Te ajusto el cálculo.',
+    cafetera:   'Cafetera espresso sumada — también dispara el pico, redimensiono el inversor.',
+    secador:    'Secador, vale. Eso pide inversor de más calibre. Lo recalculo.',
+    hervidor:   'Hervidor, ok. Pico de 1500 W, redimensiono el inversor.',
+    aa:         'Aire acondicionado, vale. Eso ya son placas grandes, batería gorda e inversor dedicado. Veremos qué entra.',
+    calefaccion:'Calefacción, anotado. Si es Webasto, son casi 1000 € más.',
+    nevera:     'Nevera, ok. A ver qué modelo encaja con el presupuesto.',
+    portatil:   'Vale, cargador del portátil. Modesto, no cambia mucho.',
+    iluminacion:'Iluminación LED, ok. Consumo bajo.',
+  };
+
+  let _lastAckIndex = -1;
+  function pickAck() {
+    let i;
+    do { i = Math.floor(Math.random() * ACKS.length); } while (i === _lastAckIndex && ACKS.length > 1);
+    _lastAckIndex = i;
+    return ACKS[i];
   }
+  function pickOne(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
+
+  function naturalAck(state, updates) {
+    const parts = [];
+    if (updates.includes('vehiculo') && state.vehiculo) {
+      parts.push(pickOne(DECIR_VEH)(state.vehiculo.texto));
+    }
+    if (updates.includes('personas') && state.personas !== null) {
+      parts.push(pickOne(DECIR_PERS)(state.personas));
+    }
+    if (updates.includes('uso') && state.uso) {
+      parts.push(pickOne(DECIR_USO[state.uso]));
+    }
+    if (updates.includes('autonomia_dias') && state.autonomia_dias) {
+      parts.push(pickOne(DECIR_AUT)(state.autonomia_dias));
+    }
+    if (updates.includes('presupuesto_eur') && state.presupuesto_eur) {
+      parts.push(pickOne(DECIR_PRES)(state.presupuesto_eur));
+    }
+    if (parts.length === 0) return '';
+    return parts.join(' ');
+  }
+
+  function microReaction(state, updates) {
+    // Reacción corta si lo que acaba de decir el usuario tiene implicaciones obvias.
+    const r = [];
+    if (updates.includes('autonomia_dias') && updates.includes('presupuesto_eur')) {
+      if (state.autonomia_dias >= 7 && state.presupuesto_eur < 2500) {
+        r.push('Ojo, autonomía larga con presupuesto ajustado es complicado. Hay que hilar fino.');
+      } else if (state.autonomia_dias >= 5 && state.presupuesto_eur < 1500) {
+        r.push('Con ese presupuesto y esos días fuera… vamos justos. Veremos qué entra.');
+      }
+    }
+    if (updates.includes('vehiculo') && state.vehiculo?.tamano === 'pequeno') {
+      r.push('Furgo pequeña, ¿eh? Cuidado con meter mucha nevera grande o placas rígidas — hay sitio justo.');
+    }
+    if (updates.includes('uso') && state.uso === 'nomada' && state.autonomia_dias == null) {
+      r.push('Nómada pide batería en condiciones, luego ajustamos.');
+    }
+    return r.join(' ');
+  }
+
+  function naturalAparatoMid(aparato) {
+    if (DECIR_KILLER[aparato.id]) return DECIR_KILLER[aparato.id];
+    return `${aparato.label}, anotado.`;
+  }
+  function microReactionAparato(aparato, prev, next, state) {
+    // Cuando añadir un aparato cambia la decisión mid-flow, queremos una
+    // frase natural que explique la consecuencia, no un diff técnico.
+    const prevIds = new Set(prev.picks.map(p => p.producto.id));
+    const added = next.picks.filter(p => !prevIds.has(p.producto.id)).map(p => p.producto.nombre);
+    if (aparato.id === 'microondas') {
+      return pickOne([
+        'Microondas, vale — eso son 1500 W de pico. Hasta ahora estaba tirando con un inversor modesto, no me vale. Te subo a uno en condiciones y reviso la batería. Mira.',
+        'A ver, microondas. Eso obliga a que el inversor aguante picos altos. Se nota en la elección. Te paso el cálculo actualizado.',
+        'Microondas, ojo — cambia las cuentas. Te redimensiono inversor y batería.',
+      ]) + (added.length ? ` Sumo ${added.join(', ')}.` : '');
+    }
+    if (aparato.id === 'cafetera') {
+      return pickOne([
+        'Cafetera espresso, vale. También dispara el pico, redimensiono el inversor.',
+        'Una cafetera espresso pide inversor algo más serio. Te ajusto.',
+      ]) + (added.length ? ` Sumo ${added.join(', ')}.` : '');
+    }
+    if (['secador','hervidor'].includes(aparato.id)) {
+      return `${aparato.label} también tira de pico. Ajusto el inversor.` + (added.length ? ` Sumo ${added.join(', ')}.` : '');
+    }
+    if (aparato.id === 'aa') {
+      return 'Aire acondicionado, vale. Eso son placas grandes, batería gorda e inversor dedicado. Reviso todo.' + (added.length ? ` Sumo ${added.join(', ')}.` : '');
+    }
+    if (aparato.id === 'calefaccion') {
+      return 'Calefacción, anotado. Si es tipo Webasto son cerca de 1000 € más.' + (added.length ? ` Lo meto.` : '');
+    }
+    if (aparato.id === 'nevera') {
+      return 'Nevera, ok. A ver qué modelo encaja con el presupuesto.' + (added.length ? ` Sumo ${added.join(', ')}.` : '');
+    }
+    // Resto de aparatos: respuesta neutra
+    return naturalAparatoMid(aparato);
+  }
+  function naturalMaxApetito() {
+    return pickOne(DECIR_MAX);
+  }
+  function naturalError(state) {
+    // Variaciones según lo que sepamos ya. Si no sabemos nada, hint más abierto.
+    const knows = !!state.vehiculo;
+    const opt = [
+      'Hmm, eso no me ha cuadrado.',
+      'Perdona, no te he pillado.',
+      'Jmm, no me encaja lo que me dices.',
+      'A ver, no te sigo.',
+      '¿Me lo cuentas de otra forma?',
+    ];
+    let tail;
+    if (knows) {
+      tail = pickOne([
+        '¿Qué te quería preguntar?',
+        '¿Cuál es la siguiente pieza?',
+        '¿Quieres que te recuerde lo que llevo?',
+        '¿A qué te refieres?',
+      ]);
+    } else {
+      tail = 'Empieza contándome algo de la furgo, da igual el detalle.';
+    }
+    return `${pickOne(opt)} ${tail}`;
+  }
+  function naturalComplete() {
+    return pickOne([
+      'Vale, con eso tengo lo importante.',
+      'OK, con esto ya me vale para proponerte algo.',
+      'Vale. Tengo lo justo para calcular.',
+      'OK. Vamos a hacer números.',
+      'Bien, creo que ya sé lo que buscas.',
+    ]);
+  }
+  function naturalConfirmSummary() {
+    return pickOne([
+      'Vale. Vamos allá.',
+      'OK. Mira a ver qué te propongo.',
+      'Vale. Ahí va.',
+      'Vale. Vamos a hacer cuentas.',
+      'Hecho. Vamos allá.',
+    ]);
+  }
+  function naturalHello(free) {
+    if (free) return pickOne([
+      '<p>Hola. Cuéntame cómo quieres usar la camper, con tus palabras. Vehículo, gente, patrón de uso, presupuesto… como te salga.</p>',
+      '<p>Hola. Empieza contándome lo que tengas: la furgo, las personas, el uso, el presupuesto… Con eso ya me oriento.</p>',
+    ]);
+    return pickOne([
+      '<p>Hola. Te voy preguntando y tú respondes cuando quieras.</p>',
+    ]);
+  }
+  function naturalExample() {
+    return pickOne([
+      'He cargado un caso típico. Mira a ver si te encaja.',
+      'Ahí va un caso ya relleno. Si te encaja, sigue; si no, me dices qué cambiar.',
+      'Vale. Para enseñarte cómo va, te dejo un caso ya montado.',
+    ]);
+  }
+
+  function naturalChangeMsg(field) {
+    const map = {
+      autonomia_dias: 'Hecho. Sin red, ¿cuántos días seguidos?',
+      presupuesto_eur: 'Hecho. ¿De presupuesto, qué cifra?',
+      uso:            'Hecho. ¿Qué patrón de uso? (finde, semanas sueltas, todo el año, nómada.)',
+      aparatos:       'Hecho. ¿Qué aparato quieres añadir? (microondas, cafetera, secador, AA…)',
+    };
+    return map[field] || 'Hecho. ¿Qué quieres ajustar?';
+  }
+
   function humanFieldName(field) {
     return { autonomia_dias:'la autonomía', presupuesto_eur:'el presupuesto', uso:'el patrón de uso', aparatos:'los aparatos' }[field] || field;
   }
