@@ -22,16 +22,14 @@ jobs:
         uses: actions/checkout@v4
 
       # 1) Genera web/assets/config.js a partir de los secrets del repo.
-      #    El archivo se escribe en el working tree pero .gitignore lo excluye
-      #    del repositorio. Solo vivirá en el artefacto que se publica.
+      #    SOLO valores NO sensibles (Supabase público, tag de afiliado).
+      #    La key del LLM vive en Supabase (Edge Function `llm-proxy`),
+      #    nunca toca este archivo.
       - name: Generate config.js from secrets
         env:
-          SUPABASE_URL:        ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY:   ${{ secrets.SUPABASE_ANON_KEY }}
-          LLM_API_KEY:         ${{ secrets.LLM_API_KEY }}
-          LLM_ENDPOINT:        ${{ secrets.LLM_ENDPOINT }}
-          LLM_MODEL:           ${{ secrets.LLM_MODEL }}
-          AMAZON_TAG:          ${{ secrets.AMAZON_TAG }}
+          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          AMAZON_TAG:        ${{ secrets.AMAZON_TAG }}
         run: |
           set -euo pipefail
           mkdir -p web/assets
@@ -39,21 +37,15 @@ jobs:
           const CONFIG = {
             SUPABASE_URL: '__SUPABASE_URL__',
             SUPABASE_ANON_KEY: '__SUPABASE_ANON_KEY__',
-            LLM_API_KEY: '__LLM_API_KEY__',
-            LLM_ENDPOINT: '__LLM_ENDPOINT__',
-            LLM_MODEL: '__LLM_MODEL__',
             AMAZON_TAG: '__AMAZON_TAG__',
             SYSTEM_PROMPT_PATH: '../system-prompts/asesor-camper.md',
           };
           EOF
-          sed -i "s|__SUPABASE_URL__|${SUPABASE_URL}|g"       web/assets/config.js
+          sed -i "s|__SUPABASE_URL__|${SUPABASE_URL}|g"           web/assets/config.js
           sed -i "s|__SUPABASE_ANON_KEY__|${SUPABASE_ANON_KEY}|g" web/assets/config.js
-          sed -i "s|__LLM_API_KEY__|${LLM_API_KEY}|g"         web/assets/config.js
-          sed -i "s|__LLM_ENDPOINT__|${LLM_ENDPOINT}|g"       web/assets/config.js
-          sed -i "s|__LLM_MODEL__|${LLM_MODEL}|g"             web/assets/config.js
-          sed -i "s|__AMAZON_TAG__|${AMAZON_TAG}|g"           web/assets/config.js
-          echo "config.js generado:"
-          sed 's/\(KEY\|TOKEN\|SECRET\)\("[^"]*": "\)[^"]*/\1\2***/g' web/assets/config.js
+          sed -i "s|__AMAZON_TAG__|${AMAZON_TAG}|g"               web/assets/config.js
+          # Muestra qué claves se han inyectado (ocultando los valores)
+          echo "config.js generado con $(grep -c '=' web/assets/config.js) campos"
 
       # 2) Publica SOLO el contenido de web/ en la rama gh-pages.
       - name: Deploy web/ to gh-pages
@@ -61,11 +53,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./web
-          # Sube como root (/) en la URL final
           keep_files: false
-          # No crear commit vacío si no hay cambios en web/ (excluyendo config.js generado)
           enable_nojekyll: true
-          # Mensaje del commit en gh-pages
           commit_message: "deploy: ${{ github.event.head_commit.message }}"
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"

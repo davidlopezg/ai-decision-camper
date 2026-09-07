@@ -3,23 +3,28 @@
    y rellena los valores reales. config.js está en .gitignore
    y NO debe commitearse al repositorio.
 
-   Cómo obtener cada valor:
-   - SUPABASE_URL + SUPABASE_ANON_KEY: Supabase → Settings → API
-   - LLM_API_KEY: tu proveedor LLM (MiniMax)
-   - LLM_ENDPOINT: endpoint base de la API
-   - LLM_MODEL: nombre del modelo (ej. "minimax-2.7")
-   - AMAZON_TAG: Tracking ID de Amazon Associates
+   ARQUITECTURA ACTUAL (con proxy server-side):
+   - SUPABASE_URL + SUPABASE_ANON_KEY: el navegador los usa directamente
+     para consultar la tabla `productos`. La anon key es pública por diseño.
+   - AMAZON_TAG: Tracking ID de Amazon Associates (va en URLs de afiliado).
+   - SYSTEM_PROMPT_PATH: ruta al .md con el prompt del sistema.
+
+   Lo que YA NO va aquí (movido al servidor):
+   - LLM_API_KEY, LLM_ENDPOINT, LLM_MODEL: viven en los secrets de la
+     Supabase Edge Function `llm-proxy`. El navegador nunca los ve.
+
+   Cómo desplegar el proxy:
+   - Código: supabase/functions/llm-proxy/index.ts
+   - Deploy: supabase functions deploy llm-proxy --no-verify-jwt
+   - Secrets: supabase secrets set LLM_API_KEY=sk-... \
+                                LLM_ENDPOINT=https://api.minimaxi.chat/v1 \
+                                LLM_MODEL=minimax-2.7
 */
 
 const CONFIG = {
-  // Supabase
+  // Supabase (públicos — la anon key está diseñada para cliente)
   SUPABASE_URL: 'https://YOUR_PROJECT.supabase.co',
   SUPABASE_ANON_KEY: 'YOUR_ANON_KEY',
-
-  // LLM (MiniMax)
-  LLM_API_KEY: 'YOUR_LLM_API_KEY',
-  LLM_ENDPOINT: 'https://api.YOUR_PROVIDER.com/v1',
-  LLM_MODEL: 'minimax-2.7',
 
   // Afiliación
   AMAZON_TAG: 'camperdecisio-21',
