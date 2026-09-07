@@ -3,14 +3,14 @@
 // El navegador llama a esta función, que a su vez llama al proveedor LLM.
 //
 // Deploy: supabase functions deploy llm-proxy --no-verify-jwt
-// Secrets: supabase secrets set LLM_API_KEY=sk-... LLM_ENDPOINT=https://api.minimaxi.chat/v1 LLM_MODEL=minimax-2.7
+// Secrets: supabase secrets set LLM_API_KEY=sk-... LLM_ENDPOINT=https://api.minimaxi.chat/v1 LLM_MODEL=MiniMax-M2.7
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Secrets — configurados con `supabase secrets set`
 const LLM_API_KEY  = Deno.env.get("LLM_API_KEY");
 const LLM_ENDPOINT = Deno.env.get("LLM_ENDPOINT") ?? "https://api.minimaxi.chat/v1";
-const LLM_MODEL    = Deno.env.get("LLM_MODEL")    ?? "minimax-2.7";
+const LLM_MODEL    = Deno.env.get("LLM_MODEL")    ?? "MiniMax-M2.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin":  "*",

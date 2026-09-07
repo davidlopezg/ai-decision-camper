@@ -18,7 +18,7 @@
    - Deploy: supabase functions deploy llm-proxy --no-verify-jwt
    - Secrets: supabase secrets set LLM_API_KEY=sk-... \
                                 LLM_ENDPOINT=https://api.minimaxi.chat/v1 \
-                                LLM_MODEL=minimax-2.7
+                                LLM_MODEL=MiniMax-M2.7
 */
 
 const CONFIG = {
