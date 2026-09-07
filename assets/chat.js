@@ -146,18 +146,21 @@
     const notes = [];
     let aparatoAdded = null;
 
-    // Vehículo
-    const vehPattern = /(transit|caddy|berlingo|sprinter|crafter|daily|ducato|jumper|jump[ey]|partner|vivaro|talento|scudo|expert|traveller|vito|caravelle|tourneo|proace|hiace|combo|cargo|movano|trafic|levante)(?:[^.,;]{0,12})(\d{4})?/;
+    // Vehículo — el año puede aparecer antes o después del modelo,
+    // y se busca en el input COMPLETO (no en el substring recortado).
+    const vehPattern = /\b(?:(\d{4})\s+)?(transit|caddy|berlingo|sprinter|crafter|daily|ducato|jumper|jump[ey]|partner|vivaro|talento|scudo|expert|traveller|vito|caravelle|tourneo|proace|hiace|combo|cargo|movano|trafic|levante)(?:\s+(\d{4}))?\b/;
     const vehMatch = t.match(vehPattern);
     if (vehMatch) {
-      const v = vehMatch[0].trim();
-      const vehLower = v.toLowerCase();
+      const modelo = vehMatch[2];
+      const vehLower = modelo.toLowerCase();
       let tamano = 'mediano';
       const pequenos = /caddy|berlingo|partner|combo|tourneo|vivaro|talento|scudo|traveller|levante/;
       const grandes = /sprinter|crafter|daily|ducato|jumper|jump[ey]|proace|trafic|movano|cargo|hiace|vito|caravelle/;
       if (pequenos.test(vehLower)) tamano = 'pequeno';
       else if (grandes.test(vehLower)) tamano = 'grande';
-      state.vehiculo = { texto: normalizeVehiculo(v), tamano, raw: v };
+      // Año del vehículo: en el input completo, cerca del modelo (no en otra fecha).
+      const anioMatch = t.match(/\b(20\d{2}|19\d{2})\b/);
+      state.vehiculo = { texto: normalizeVehiculoFull(modelo, anioMatch && anioMatch[1]), tamano, raw: vehMatch[0] };
       updates.push('vehiculo');
     }
 
@@ -178,13 +181,13 @@
 
     // Personas — el número explícito gana sobre heurísticos ("mi mujer" → 2,
     // pero "somos 3 y mi mujer y mi hija" son 4 personas).
-    const NUM_PERSONAS = { un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7 };
+    const NUM_PERSONAS = { un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, doce:12 };
     const perMatch = t.match(/(?:somos|viajamos|para|ocupantes|alquiler)\s*(\d+)\b/)
                   || t.match(/\b(\d+)\s*personas?\b/)
                   || t.match(/\b(\d+)\s*adultos?\b/)
                   || t.match(/\b(\d+)\s*gente\b/)
-                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*personas?\b/)
-                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*adultos?\b/);
+                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce)\s*personas?\b/)
+                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce)\s*adultos?\b/);
     if (perMatch) {
       let n = parseInt(perMatch[1], 10);
       if (!n || isNaN(n)) n = NUM_PERSONAS[perMatch[1].toLowerCase()] || 0;
@@ -192,19 +195,22 @@
         state.personas = n; updates.push('personas');
       }
     } else if (state.personas === null) {
-      // Heurísticos solo cuando NO hay número explícito
-      if (/\b(solo|sola|yo\s+viajo|viajo\s+solo|viajo\s+sola)\b/.test(t)) {
-        state.personas = 1; updates.push('personas');
-      } else if (/\b(alquilamos|compartimos|con\s+amigos|con\s+un\s+amigo|grupo|familia|con\s+los\s+niños|con\s+ninos|con\s+mi\s+cría|con\s+los\s+críos)\b/.test(t)) {
-        state.personas = 4; updates.push('personas');
-      } else if (/\b(pareja|mi\s+novia|mi\s+novio|mi\s+esposa|mi\s+esposo|mi\s+mujer|mi\s+marido)\b/.test(t)) {
-        // mi mujer, pero si también hay hijos → 4 (familia); si no, 2 (pareja)
-        if (/\b(hijo|hija|hijos|hijas|niños|ninos|nino|nina)\b/.test(t)) {
-          state.personas = 4; updates.push('personas');
-        } else {
-          state.personas = 2; updates.push('personas');
-        }
-      }
+      // Sin número: contar familiares explícitos. Tú +1 + cada uno mencionado.
+      // 'mi mujer' = +1, 'mi mujer y mi hija' = +1+1, 'mis hijos' = +2, etc.
+      let fam = 1; // el usuario
+      if (/\b(pareja|mi\s+novia|mi\s+novio|mi\s+esposa|mi\s+esposo|mi\s+mujer|mi\s+marido)\b/.test(t)) fam += 1;
+      const hijosSingular = (t.match(/\bmi\s+hijo\b/g) || []).length
+                          + (t.match(/\bmi\s+hija\b/g) || []).length;
+      fam += hijosSingular;
+      // Si dice "hijos/hijas/niños" en plural, asumir 2 salvo que ya contemos singulares.
+      const plurales = /\b(mi\s+hijos|mi\s+hijas|hijos|hijas|los\s+niños|los\s+ninos|mis\s+hijos|mis\s+hijas)\b/.test(t);
+      if (plurales && hijosSingular === 0) fam += 2;
+      // "solo" sólo cuenta 1 si NO hay otros familiares Y no hay "con"
+      const diceSolo = /\b(solo|sola|yo\s+viajo|viajo\s+solo|viajo\s+sola)\b/.test(t);
+      const diceCon   = /\b(con|con\s+mi|con\s+la|con\s+el)\b/.test(t);
+      if (diceSolo && (fam === 1 || !diceCon)) fam = 1;
+      const n = Math.min(12, Math.max(1, fam));
+      state.personas = n; updates.push('personas');
     }
 
     // Uso
@@ -218,15 +224,48 @@
       state.uso = 'anual'; updates.push('uso');
     }
 
-    // Autonomía
-    const autMatch = t.match(/\b(\d+)\s*d[ií]as?\b/i)
-                  || t.match(/\b(un[ao]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte)\s*d[ií]as?\b/i)
-                  || t.match(/\b(un[ao]?)\s*semana\b/);
-    if (autMatch) {
-      const map = { un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, quince:15, veinte:20 };
-      let n = parseInt(autMatch[1], 10);
-      if (!n) n = map[autMatch[1].toLowerCase()] || null;
-      if (n && n <= 30) {
+    // Autonomía — orden importa: rangos ANTES que número suelto (para no
+    // quedarnos con la parte alta del rango, ej. "5-7 días" cogería "7").
+    {
+      const NUM_AUT = { un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, quince:15, veinte:20 };
+      let n = null;
+
+      // 1) 'una/dos/tres semanas' → *7
+      const sem = t.match(/\b(un[oa]?|dos|tres|cuatro|un)\s*semanas?\b/);
+      if (sem) n = (NUM_AUT[sem[1].toLowerCase()] || 1) * 7;
+
+      // 2) Rango PRIMERO: '3-7 días', '3 a 7 días', 'entre 3 y 7 días', '3 o 4 (días)'
+      if (n === null) {
+        // 'entre N y M días'
+        const r1 = t.match(/\bentre\s+(\d+)\s*y\s+(\d+)(?:\s*d[ií]as?)?\b/);
+        // 'N-M días' o 'N a M días' con la palabra 'días'
+        const r2 = t.match(/\b(\d+)\s*[-a]\s*(\d+)\s*d[ií]as?\b/);
+        // '3 o 4' SIN 'días' (solo si la pregunta activa es autonomía)
+        const r3 = t.match(/\b(\d+)\s+o\s+(\d+)\b/);
+        const rango = r1 || r2;
+        if (rango) n = parseInt(rango[1], 10);
+        else if (r3) n = parseInt(r3[1], 10);
+      }
+
+      // 3) Ahora sí: número + 'días' simple (NO parte de un rango)
+      if (n === null) {
+        const d = t.match(/\b(\d+)\s+d[ií]as?\b/);
+        if (d) n = parseInt(d[1], 10);
+      }
+
+      // 4) 'N días' en palabras
+      if (n === null) {
+        const dw = t.match(/\b(un[oa]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte)\s*d[ií]as?\b/);
+        if (dw) n = NUM_AUT[dw[1].toLowerCase()];
+      }
+
+      // 5) Frases hechas
+      if (n === null && /\bvarios\s*d[ií]as?\b/.test(t)) n = 3;
+      if (n === null && /\buna\s*semana\b/.test(t)) n = 7;
+      if (n === null && /\bdos\s*semanas\b/.test(t)) n = 14;
+      if (n === null && /\bmucho\s+tiempo\b/.test(t)) n = 7;
+
+      if (n && n >= 1 && n <= 60) {
         state.autonomia_dias = n;
         updates.push('autonomia_dias');
       }
@@ -241,7 +280,13 @@
       state.configuracion_actual = 'equipada'; updates.push('configuracion_actual');
     }
 
-    // Aparatos
+    // Aparatos — "todo" / "lo máximo" / "lo que se pueda" → set básico + flag para el decider
+    let maxApetito = false;
+    if (/\b(todo|todos|lo\s+m[áa]ximo|lo\s+mejor|lo\s+que\s+(se\s+)?pueda|lo\s+que\s+entre|m[áa]s\s+mejor|cualquier\s+cosa)\b/.test(t)) {
+      const baseline = ['nevera','iluminacion','portatil'];
+      for (const ap of baseline) if (!state.aparatos.includes(ap)) state.aparatos.push(ap);
+      maxApetito = true;
+    }
     for (const ap of APARATOS) {
       if (ap.keys.some(k => t.includes(k))) {
         if (!state.aparatos.includes(ap.id)) {
@@ -250,7 +295,7 @@
         }
       }
     }
-    if (aparatoAdded) updates.push('aparatos');
+    if (state.aparatos.length > 0) updates.push('aparatos');
 
     // Prioridades explícitas
     if (/\b(autonom[íi]a|largo|lejos|sin\s+red|enchufe|fuera\s+mucho)\b/.test(t) && !state.prioridades.includes('autonomia')) state.prioridades.push('autonomia');
@@ -258,13 +303,14 @@
     if (/\b(potencia|microondas|secador|cafetera)\b/.test(t) && !state.prioridades.includes('potencia')) state.prioridades.push('potencia');
     if (/\b(sencill[eo]|simple|f[aá]cil|sin\s+liar)\b/.test(t) && !state.prioridades.includes('sencillez')) state.prioridades.push('sencillez');
 
-    // Respuesta corta: si el input es SOLO un número y la pregunta activa
-    // acepta un número, lo asignamos al campo que toca. Evita el "no te he
-    // pillado bien" cuando el usuario responde "2500" a "¿con qué presupuesto?".
+    // Respuesta corta: si el input es SOLO un número (o un rango corto) y la
+    // pregunta activa acepta un número, lo asignamos al campo que toca.
+    // Evita el "no te he pillado bien" cuando el usuario responde "2500" a
+    // "¿con qué presupuesto?" o "3 o 4" a "¿cuántos días?".
     const trimmed = texto.trim();
-    const numSolo = trimmed.match(/^(\d{1,3}(?:[.,]\d{3})+|\d{2,6})\s*([€e]|€)?\s*$/);
+    const numSolo = trimmed.match(/^(?:entre\s+)?(\d+)(?:\s*[-oa]\s*(\d+))?(?:\s*d[ií]as?)?(?:\s*[€e])?\s*$/i);
     if (numSolo) {
-      const n = parseInt(numSolo[1].replace(/[.,](?=\d)/g, ''), 10);
+      const n = parseInt(numSolo[1], 10);
       const q = nextQuestion(state);
       if (q && q.key === 'presupuesto_eur' && n >= 200 && n <= 50000 && state.presupuesto_eur === null) {
         state.presupuesto_eur = n;
@@ -282,6 +328,9 @@
   }
 
   function normalizeVehiculo(v) {
+    return normalizeVehiculoFull(v, null);
+  }
+  function normalizeVehiculoFull(modelo, anio) {
     const map = {
       transit:'Ford Transit', caddy:'VW Caddy', berlingo:'Citroën Berlingo',
       partner:'Peugeot Partner', sprinter:'Mercedes Sprinter', crafter:'VW Crafter',
@@ -293,12 +342,11 @@
       combo:'Opel Combo', scudo:'Fiat Scudo', expert:'Peugeot Expert',
       movano:'Opel Movano', cargo:'Ford Cargo', levante:'Fiat Talento',
     };
-    const lc = v.toLowerCase();
+    const lc = modelo.toLowerCase();
     for (const k in map) if (lc.includes(k)) {
-      const m = v.match(/\b(20\d{2}|19\d{2})\b/);
-      return map[k] + (m ? ' ' + m[1] : '');
+      return map[k] + (anio ? ' ' + anio : '');
     }
-    return v.replace(/^\w/, c => c.toUpperCase());
+    return modelo.replace(/^\w/, c => c.toUpperCase());
   }
 
   // ====================================================================
