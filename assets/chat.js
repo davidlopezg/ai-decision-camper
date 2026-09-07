@@ -739,18 +739,42 @@
     setInputEnabled(true);
 
     if (mode === 'libre') {
-      addBot('<p>Hola. Te hago unas preguntas para entender tu caso y proponerte una configuración a medida.</p><p>Empieza contándome cómo quieres usar tu camper: vehículo, gente, patrón de uso… como te salga. Cuanto más真实 mejor.</p>');
+      addBot('<p>Hola. Te voy preguntando solo lo que necesito para proponerte una configuración a medida.</p><p>Cuenta tu caso con tus palabras: vehículo, gente, patrón de uso, presupuesto… como te salga.</p>');
     } else {
       addBot('<p>Hola. Te haré las preguntas una a una. Responde cuando quieras.</p>');
     }
 
-    // Sugerencias rápidas para arrancar
-    addQuickReplies([
-      { value:'ejemplo', label:'Usar un ejemplo' },
-    ], () => {
-      addUser('Tengo una Transit para dos personas. Finde + viajes de una semana en verano, 2500€ y a veces sin enchufe 4 días.');
-      handleUserText('Tengo una Transit para dos personas. Finde + viajes de una semana en verano, 2500€ y a veces sin enchufe 4 días.');
-    });
+    // Sugerencias rápidas para arrancar (solo en modo libre)
+    if (mode === 'libre') {
+      addQuickReplies([
+        { value:'ejemplo', label:'Usar este ejemplo' },
+      ], () => {
+        addUser('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.');
+        handleUserText('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.');
+      });
+    }
+  }
+
+  // Carga el caso de ejemplo con TODOS los campos rellenos. Salta
+  // el diálogo de preguntas y va directo al resumen. Para demos.
+  function startFromExample() {
+    state = freshState();
+    conversationActive = true;
+    document.getElementById('chat-thread').innerHTML = '';
+    document.getElementById('chat-welcome').classList.remove('chat-view-active');
+    document.getElementById('chat-questions').classList.add('chat-view-active');
+    document.getElementById('chat-text-input').value = '';
+    setInputEnabled(true);
+
+    addBot('<p>Hola. Te muestro cómo quedaría el asistente con un caso típico ya rellenado. Si te encaja, sigue hasta el final. Si quieres cambiar algo, dime qué.</p>');
+    addUser('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.');
+    interpretar('Tengo una Transit para dos personas. Escapadas de fin de semana y un viaje de una semana en verano. 2.500 € y a veces sin enchufe 4 días.', state);
+    state.configuracion_actual = state.configuracion_actual || 'desde_cero';
+    state.confirmados = { vehiculo:true, uso:true, autonomia:true, presupuesto:true };
+    setTimeout(() => {
+      addBot('Apuntado. Mostrando lo que he entendido y la configuración directamente. Puedes tocar cualquier cosa luego.');
+      addSummaryCard(state);
+    }, 350);
   }
 
   function handleUserText(texto) {
@@ -1003,13 +1027,13 @@
   // ====================================================================
   document.addEventListener('DOMContentLoaded', () => {
     const btnStart    = document.getElementById('chat-start');
-    const btnStepwise = document.getElementById('chat-start-stepwise');
+    const btnExample  = document.getElementById('chat-start-example');
     const btnSend     = document.getElementById('chat-send');
     const input       = document.getElementById('chat-text-input');
     const btnRestart  = document.getElementById('chat-restart');
 
-    if (btnStart) btnStart.addEventListener('click', () => startConversation('libre'));
-    if (btnStepwise) btnStepwise.addEventListener('click', () => startConversation('paso_a_paso'));
+    if (btnStart)   btnStart.addEventListener('click', () => startConversation('libre'));
+    if (btnExample) btnExample.addEventListener('click', startFromExample);
     if (btnRestart) btnRestart.addEventListener('click', resetConversation);
     if (input) {
       input.addEventListener('keydown', e => {
