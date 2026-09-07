@@ -667,6 +667,67 @@
 }
 
 /* ==================================================================
+   v3.3 · Accesorios de instalación
+   ================================================================== */
+.chat-accessories {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+}
+.chat-accessories .chat-bubble-q { margin-top: 0; }
+.chat-accessories-sub {
+  margin: 0 0 var(--space-2);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+.chat-accessories-sub strong { color: var(--color-accent); }
+.chat-accessories-list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.chat-accessory-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 0.5rem 0.625rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm, var(--radius));
+  border: 1px solid var(--color-border);
+}
+.chat-accessory-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.chat-accessory-name {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+.chat-accessory-motivo {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+.chat-accessory-price {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==================================================================
    v3.2 · Teaser del modo BUILD (futuro montarlo-tú)
    ================================================================== */
 .chat-build-context {

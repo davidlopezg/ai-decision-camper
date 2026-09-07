@@ -107,6 +107,67 @@
   const AMAZON_TAG = 'camperdecisio-21';
 
   // ====================================================================
+  //  CATÁLOGO DE ACCESORIOS — cables, fusibles, soportes, etc.
+  // ====================================================================
+  // No forman parte de la decisión "qué comprar" pero son obligatorios
+  // para la instalación. Cada accesorio declara bajo qué rol(es)
+  // principales se activa. Precios orientativos Amazon España 2026.
+  const ACCESORIOS = [
+    { id:'cable-bat-35',     nombre:'Cable batería 35mm² (5m, rojo+negro)',       precio: 65,
+      requiere: p => p.producto.categoria === 'baterias' && (p.producto.capacidad_ah||0) >= 80 && (p.producto.capacidad_ah||0) < 200 },
+    { id:'cable-bat-50',     nombre:'Cable batería 50mm² (5m, grueso)',           precio: 95,
+      requiere: p => p.producto.categoria === 'baterias' && (p.producto.capacidad_ah||0) >= 200 },
+    { id:'cable-inv-25',     nombre:'Cable inversor 25mm² (1m, latiguillo)',     precio: 28,
+      requiere: p => p.producto.categoria === 'inversores' && (p.producto.potencia_w||0) >= 800 },
+    { id:'fuse-anl-100',     nombre:'Fusible ANL 100A + portafusible',           precio: 24,
+      requiere: p => p.producto.categoria === 'baterias' && (p.producto.capacidad_ah||0) >= 80 && (p.producto.capacidad_ah||0) < 200 },
+    { id:'fuse-anl-200',     nombre:'Fusible ANL 200A',                          precio: 38,
+      requiere: p => p.producto.categoria === 'inversores' && (p.producto.potencia_w||0) >= 1000,
+      requeridoPor: 'Victron Phoenix 12/1200 o equivalente' },
+    { id:'terminales-anillo',nombre:'Terminales de anillo M8 (pack 6)',            precio:  9,
+      requiere: p => p.producto.categoria === 'baterias' },
+    { id:'soporte-bateria',  nombre:'Caja/soporte de batería con cinchas',         precio: 35,
+      requiere: p => p.producto.categoria === 'baterias' },
+    { id:'cable-solar-6',    nombre:'Cable solar 6mm² (10m, doble)',                precio: 28,
+      requiere: p => p.producto.categoria === 'placas' && (p.producto.watts_pico||0) >= 80 },
+    { id:'mc4',             nombre:'Conectores MC4 (par macho-hembra)',           precio:  8,
+      requiere: p => p.producto.categoria === 'placas' && !(p.producto.subcategoria === 'portatil') },
+    { id:'soportes-panel',   nombre:'Soportes adhesivos panel solar (pack 4)',      precio: 14,
+      requiere: p => p.producto.categoria === 'placas' && !(p.producto.subcategoria === 'portatil') },
+    { id:'pasacables',      nombre:'Pasacables estanco para techo (pack 2)',        precio: 18,
+      requiere: p => p.producto.categoria === 'placas' && !(p.producto.subcategoria === 'portatil') },
+    { id:'cable-nevera',     nombre:'Cable 6mm² para nevera (3m)',                   precio: 12,
+      requiere: p => p.producto.categoria === 'neveras' && !(p.producto.subcategoria === 'termoelectrica_pasiva') },
+    { id:'fuse-nevera',     nombre:'Fusible en línea 10A',                          precio:  6,
+      requiere: p => p.producto.categoria === 'neveras' && !(p.producto.subcategoria === 'termoelectrica_pasiva') },
+    { id:'cable-regulador', nombre:'Cable 4mm² regulador→batería (2m)',            precio:  9,
+      requiere: p => p.producto.subcategoria === 'regulador_mppt' },
+    { id:'cinta-vulcanizada', nombre:'Cinta vulcanizada (1 rollo)',                 precio:  8,
+      siempre: true },
+    { id:'kit-bridas',      nombre:'Bridas + tacos + tornillería surtida',        precio: 10,
+      siempre: true },
+  ];
+
+  function computeAccessories(decision) {
+    if (!decision || !decision.picks) return [];
+    const seen = new Set();
+    const result = [];
+    for (const acc of ACCESORIOS) {
+      const matches = acc.siempre
+        ? decision.picks   // accesorios universales: una sola entrada
+        : decision.picks.filter(p => { try { return acc.requiere(p); } catch { return false; } });
+      if (matches.length === 0) continue;
+      if (seen.has(acc.id)) continue;
+      seen.add(acc.id);
+      result.push({
+        ...acc,
+        motivo: matches.map(m => m.producto?.nombre).filter(Boolean).slice(0, 2),
+      });
+    }
+    return result;
+  }
+
+  // ====================================================================
   //  STATE — modelo estructurado del caso del usuario
   // ====================================================================
   function freshState() {
@@ -613,7 +674,7 @@
     return `Pico ${p.pico_w} W cubre justo ${lista}. Margen ajustado, sin holgura.`;
   }
 
-  function explainGlobal(state, dec) {
+  function explainGlobal(state, dec, accessories) {
     const p = [];
     if (state.uso === 'finde') {
       p.push('Tu uso de fines de semana no necesita sobredimensionar la instalación eléctrica.');
@@ -633,10 +694,13 @@
     }
     if (state.presupuesto_eur && dec.picks.length) {
       const total = dec.picks.reduce((s, x) => s + x.producto.precio, 0);
+      const totalAcc = accessories ? accessories.reduce((s, a) => s + a.precio, 0) : 0;
+      const totalFull = total + totalAcc;
       if (total > state.presupuesto_eur) {
         p.push(`AVISO: la configuración suma ~${total} € y supera tu presupuesto de ${state.presupuesto_eur} €. He priorizado las piezas críticas.`);
       } else {
-        p.push(`Total estimado: ~${total} €. Te quedan ~${Math.max(0, state.presupuesto_eur - total)} € de margen.`);
+        const margen = Math.max(0, state.presupuesto_eur - totalFull);
+        p.push(`Productos principales ~${total} €${totalAcc > 0 ? ` + cableado y material ~${totalAcc} € = ${totalFull} € total` : ''}. Te quedan ${margen} € de margen sobre presupuesto.`);
       }
     }
     return p.join(' ');
@@ -786,10 +850,33 @@
     }
     html.push(`</div>`);
 
+    // Accesorios (cables, fusibles, soportes, etc.)
+    const accs = computeAccessories(dec);
+    if (accs.length > 0) {
+      const totalAcc = accs.reduce((s, a) => s + a.precio, 0);
+      const accesoriosSearch = `https://www.amazon.es/s?k=${encodeURIComponent('kit cableado camper bateria inversor')}&tag=${AMAZON_TAG}`;
+      html.push(`<div class="chat-accessories">
+        <p class="chat-bubble-q"><strong>Material auxiliar que vas a necesitar</strong></p>
+        <p class="chat-accessories-sub">Además de los ${dec.picks.length} componente${dec.picks.length===1?'':'s'} principales, necesitas cables, fusibles y soportes para la instalación. Coste orientativo total: <strong>~${totalAcc} €</strong>.</p>
+        <ul class="chat-accessories-list">
+          ${accs.map(a => `
+            <li class="chat-accessory-item">
+              <div class="chat-accessory-main">
+                <span class="chat-accessory-name">${escapeHtml(a.nombre)}</span>
+                <small class="chat-accessory-motivo">${a.motivo.length ? escapeHtml(a.motivo.join(', ')) : ''}</small>
+              </div>
+              <span class="chat-accessory-price">~${a.precio} €</span>
+            </li>
+          `).join('')}
+        </ul>
+        <a href="${accesoriosSearch}" target="_blank" rel="noopener sponsored" class="chat-product-buy">Ver kit cableado y fusibles →</a>
+      </div>`);
+    }
+
     // Explicación global
     html.push(`<div class="chat-explanation">
       <p class="chat-bubble-q"><strong>¿Por qué esta configuración?</strong></p>
-      <p>${escapeHtml(explainGlobal(state, dec))}</p>
+      <p>${escapeHtml(explainGlobal(state, dec, accs))}</p>
     </div>`);
 
     // Qué cambiaría
