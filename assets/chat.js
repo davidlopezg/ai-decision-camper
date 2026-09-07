@@ -403,11 +403,12 @@ Reglas:
 - Eres cercano pero técnico. Sin marketing vacío.`;
   }
 
-  // ============== LLM CLIENT ==============
+  // ============== LLM CLIENT (via server-side proxy) ==============
+  // Llama al proxy Supabase Edge Function. La API key del LLM vive solo
+  // en el servidor (Deno env), nunca llega al navegador.
   async function callLLM(messages, opts = {}) {
-    const url = `${CONFIG.LLM_ENDPOINT}/chat/completions`;
+    const url = `${CONFIG.SUPABASE_URL}/functions/v1/llm-proxy`;
     const body = {
-      model: CONFIG.LLM_MODEL,
       messages,
       temperature: opts.temperature ?? 0.7,
       ...(opts.max_tokens ? { max_tokens: opts.max_tokens } : {}),
@@ -416,13 +417,14 @@ Reglas:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CONFIG.LLM_API_KEY}`,
+        'apikey': CONFIG.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
     });
     if (!r.ok) {
       const errText = await r.text().catch(() => '');
-      throw new Error(`LLM error ${r.status}: ${errText.slice(0, 200)}`);
+      throw new Error(`LLM proxy error ${r.status}: ${errText.slice(0, 200)}`);
     }
     const data = await r.json();
     return data.choices?.[0]?.message?.content || '';
@@ -523,6 +525,6 @@ Reglas:
     if (restartBtn) restartBtn.addEventListener('click', () => {
       showView('welcome');
     });
-    console.log('[chat] iniciado. Modelo:', CONFIG.LLM_MODEL, '· Supabase:', CONFIG.SUPABASE_URL);
+    console.log('[chat] iniciado. Supabase:', CONFIG.SUPABASE_URL, '· LLM via proxy server-side');
   });
 })();
