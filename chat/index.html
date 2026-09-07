@@ -49,31 +49,16 @@
       <div class="container chat-container">
         <p class="eyebrow">Asistente Camper Decision</p>
         <h1 id="chat-welcome-title" class="chat-h1">
-          Te hago <span class="logo-word-light">5 preguntas</span> y te digo qué necesita tu camper.
+          Cuéntame cómo quieres usar tu camper
         </h1>
         <p class="chat-lede">
-          Me cuentas tu vehículo, tu uso y tu presupuesto. Yo devuelvo una configuración
-          completa, explicada y justificada — con lo que descartamos y por qué.
+          Puedes escribirlo como quieras. Por ejemplo:<br>
+          <em>“Tengo una Transit para dos personas. Hacemos escapadas de fin de semana y en verano viajes de una semana. Tengo unos 2.500 € y quiero poder estar varios días sin conectarme a red.”</em>
         </p>
 
-        <div class="chat-meta">
-          <div class="chat-meta-item">
-            <strong>5 preguntas</strong>
-            <small>Sin formularios eternos</small>
-          </div>
-          <div class="chat-meta-item">
-            <strong>~2 minutos</strong>
-            <small>Lo justo para decidir bien</small>
-          </div>
-          <div class="chat-meta-item">
-            <strong>Sin venta</strong>
-            <small>No vendemos, decidimos</small>
-          </div>
-        </div>
-
-        <div class="chat-cta">
+        <div class="chat-cta chat-cta--welcome">
           <button id="chat-start" class="btn btn-primary btn-lg" type="button">Empezar conversación</button>
-          <a href="../" class="btn btn-ghost">Volver a la landing</a>
+          <button id="chat-start-stepwise" class="btn btn-ghost btn-lg" type="button">Prefiero responder paso a paso</button>
         </div>
 
         <p class="chat-disclaimer">
@@ -82,46 +67,32 @@
       </div>
     </section>
 
-    <!-- ============ QUESTIONS ============ -->
+    <!-- ============ CONVERSATION ============ -->
     <section id="chat-questions" class="chat-view" aria-labelledby="chat-q-title">
-      <div class="container chat-container">
-        <div class="chat-progress" aria-hidden="true">
-          <div class="chat-progress-bar" id="chat-progress-bar"></div>
-        </div>
-        <p class="chat-progress-label" id="chat-progress-label">Pregunta 1 de 5</p>
-
+      <div class="container chat-container chat-container--conversation">
         <div class="chat-thread" id="chat-thread" aria-live="polite" aria-atomic="false">
-          <!-- Las preguntas y respuestas se inyectan aquí -->
+          <!-- Burbujas de la conversación + resultado + opciones de cambio -->
+        </div>
+
+        <div class="chat-input-area">
+          <textarea id="chat-text-input"
+                    class="chat-text-input"
+                    placeholder="Cuéntame sobre tu camper… (Enter para enviar)"
+                    rows="2"
+                    disabled
+                    aria-label="Mensaje"></textarea>
+          <button id="chat-send" class="btn btn-primary chat-send" type="button" disabled>Enviar</button>
         </div>
       </div>
     </section>
 
-    <!-- ============ PROCESSING ============ -->
-    <section id="chat-processing" class="chat-view" aria-labelledby="chat-processing-title">
-      <div class="container chat-container chat-processing-inner">
-        <div class="chat-spinner" aria-hidden="true"></div>
-        <h2 id="chat-processing-title">Procesando tu caso</h2>
-        <p id="chat-processing-step">Cruzando requisitos con el catálogo…</p>
-        <ul class="chat-processing-steps">
-          <li id="proc-step-1">Extrayendo requisitos</li>
-          <li id="proc-step-2">Filtrando productos</li>
-          <li id="proc-step-3">Cargando fichas técnicas</li>
-          <li id="proc-step-4">Generando recomendación</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- ============ RESULT ============ -->
+    <!-- ============ RESULT ============  (legacy, ahora el resultado se pinta dentro del thread) -->
     <section id="chat-result" class="chat-view" aria-labelledby="chat-result-title">
       <div class="container chat-container">
         <p class="eyebrow">Tu configuración recomendada</p>
-        <h1 id="chat-result-title" class="chat-h1">Esta es la configuración que encá con tu caso</h1>
+        <h1 id="chat-result-title" class="chat-h1">Esta es la configuración que encaja con tu caso</h1>
         <p class="chat-lede" id="chat-result-lede"></p>
-
-        <article class="chat-rec" id="chat-rec-body">
-          <!-- La recomendación se inyecta aquí -->
-        </article>
-
+        <article class="chat-rec" id="chat-rec-body"></article>
         <div class="chat-cta">
           <button id="chat-restart" class="btn btn-primary" type="button">Hacer otra consulta</button>
           <a href="../" class="btn btn-ghost">Volver a la landing</a>
@@ -170,7 +141,6 @@
     </div>
   </footer>
 
-  <script src="../assets/config.js"></script>
   <script src="../assets/chat.js"></script>
 </body>
 </html>
