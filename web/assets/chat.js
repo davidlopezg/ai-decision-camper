@@ -390,10 +390,30 @@ Donde:
 
   // ============== LLM: GENERATE RECOMMENDATION ==============
   async function generateRecommendation(req, products, knowledge) {
-    const systemPrompt = await loadSystemPrompt();
+    // System prompt específico para modo recomendación. Es corto y
+    // sobrescribe el system prompt conversacional (asesor-camper.md),
+    // porque ese decía "pide aclaración cuando el usuario es vago"
+    // y el LLM obedecía al system prompt largo antes que al user prompt.
+    const recommenderSystem = `Eres un generador de recomendaciones técnicas para furgonetas camper.
+
+MODO OPERATIVO (sobrescribe cualquier otra instrucción):
+- Devuelves EXCLUSIVAMENTE JSON válido. Ni markdown, ni texto introductorio, ni preguntas aclaratorias.
+- No hablas con el usuario. No saludas. No pides más datos.
+- Si los datos son suficientes, recomiendas. Punto.
+
+REGLAS DE CONTENIDO:
+- Recomiendas SOLO productos del catálogo que recibes en el user prompt. Nunca inventas marcas.
+- USA el nombre EXACTO del catálogo. Si dice "Dometic CFX3 45", devuelves "Dometic CFX3 45", no "nevera de compresor premium".
+- 'id' debe ser EXACTAMENTE el id del catálogo (ej: "dometic-cfx3-45").
+- NO inventes cifras exactas (ciclos, pesos, precios, voltajes). Si no está en la ficha, no lo afirmes.
+- 'por_que_si' debe ligar el producto a un requisito concreto del usuario (vehículo, autonomía, presupuesto, uso).
+- 'motivo_descarte' debe ser verificable técnicamente (universal).`;
+
+    // Inyectamos el id en cada candidato para que el LLM no tenga que
+    // adivinarlo (antes añadía sufijos como "-19mm" o "-de-gas").
     const knowledgeText = products.map(p => {
       const md = knowledge[p.id] || '(sin ficha detallada)';
-      return `### ${p.nombre} (${p.categoria})
+      return `### [id: ${p.id}] ${p.nombre} (${p.categoria})
 ${md}`;
     }).join('\n\n---\n\n');
 
@@ -403,44 +423,65 @@ ${JSON.stringify(req, null, 2)}
 Productos candidatos del catálogo (filtrados por categoría):
 ${knowledgeText}
 
-Instrucciones de salida (JSON estricto, sin markdown ni backticks):
+Devuelve EXCLUSIVAMENTE este JSON (sin markdown, sin backticks, sin texto antes ni después):
 {
   "resumen": "string (1 frase resumen de la recomendación)",
   "por_que_encaja": ["string (3-4 checks que justifican el conjunto)"],
   "configuracion": [
     {
-      "id": "string (id del producto)",
-      "nombre": "string",
+      "id": "string (id EXACTO del catálogo)",
+      "nombre": "string (nombre EXACTO del catálogo)",
       "categoria": "string",
-      "por_que_si": "string (motivo específico de incluirlo)",
+      "por_que_si": "string (motivo específico ligado al perfil)",
       "alternativa_descartada": "string (categoría o tipo descartado, sin marca)",
       "motivo_descarte": "string (1 frase del motivo)"
     }
   ],
   "descartados_generales": ["string (1-2 descartes adicionales no como producto principal)"]
-}
-
-REGLAS:
-- USA los nombres EXACTOS de los productos del catálogo. NO modifiques el nombre ni inventes marcas nuevas. Si el catálogo tiene "Dometic CFX3 45", devuelve "Dometic CFX3 45", no "nevera de compresor premium".
-- Recomendaciones concretas (tipo y categoría), NO inventes marcas reales.
-- NO inventes cifras exactas (ciclos, pesos, precios).
-- Si no estás seguro de una especificación, no la incluyas.
-- Cada 'por_que_si' debe estar ligado a un requisito concreto del usuario.
-- 'motivo_descarte' debe ser verificable técnicamente (universal).`;
+}`;
 
     const text = await callLLM([
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: recommenderSystem },
       { role: 'user', content: userPrompt },
-    ], { temperature: 0.5, max_tokens: 2000 });
+    ], { temperature: 0.3, max_tokens: 2000 });
 
+    let parsed;
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('LLM no devolvió JSON');
-      return JSON.parse(jsonMatch[0]);
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
       console.warn('[chat] generateRecommendation fallback:', text);
       throw new Error('No se pudo generar la recomendación. Inténtalo otra vez.');
     }
+
+    // Red de seguridad: el LLM a veces añade sufijos al id (p.ej.
+    // "aislamiento-kaiflex-19mm" cuando el real es "aislamiento-kaiflex").
+    // Si el id no existe pero el nombre coincide con un producto del
+    // catálogo, lo corregimos. Si tampoco el nombre encaja, descartamos.
+    const byId    = new Map(products.map(p => [p.id, p]));
+    const byNorm  = new Map(products.map(p => [normalize(p.nombre), p]));
+    if (Array.isArray(parsed.configuracion)) {
+      parsed.configuracion = parsed.configuracion
+        .map(item => {
+          if (!item || !item.nombre) return null;
+          if (byId.has(item.id)) return item;            // ya está bien
+          const fixed = byNorm.get(normalize(item.nombre));
+          if (fixed) return { ...item, id: fixed.id, categoria: fixed.categoria };
+          return null;                                    // descartado silencioso
+        })
+        .filter(Boolean);
+    }
+    return parsed;
+  }
+
+  // Quita acentos, pasa a minúsculas y colapsa espacios/guiones para
+  // comparar nombres con tolerancia a typos.
+  function normalize(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 
   async function loadSystemPrompt() {
