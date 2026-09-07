@@ -389,9 +389,48 @@
   function decide(state) {
     const errors = [];
     const picks = [];
-    const presup = { total: state.presupuesto_eur || Infinity };
+    const warnings = [];
+    const tienePresupuesto = state.presupuesto_eur != null;
+    let presupRestante = state.presupuesto_eur ?? Infinity;
+    const fit = p => p.precio <= presupRestante;
 
-    // BATERÍA primero (muchos aparatos dependen)
+    // Helper: candidatos ordenados + primer fit dentro de presupRestante.
+    // Si ninguno entra y la categoría es crítica, devuelve error. Si es
+    // opcional, devuelve pick=null y se omite silenciosamente.
+    function tryPick(sortedCandidates, critical, errorLabel) {
+      for (const c of sortedCandidates) {
+        if (fit(c)) return { pick: c };
+      }
+      if (critical) {
+        return { pick: null, error: `No me entra ${errorLabel} con los ${Math.round(presupRestante)} € que quedan. Sube presupuesto o ajusta otro campo.` };
+      }
+      return { pick: null };  // skip
+    }
+    const consume = p => { presupRestante = presupRestante - p.precio; };
+
+    // ---------- NEVERA (primero, es el componente más caro tras bateria) ----------
+    if (state.aparatos.includes('nevera') || state.configuracion_actual === 'desde_cero') {
+      let neveras = CATALOG.filter(p => p.categoria === 'neveras' && isCompatible(p, state));
+      if (state.autonomia_dias && state.autonomia_dias >= 4) {
+        neveras = neveras.filter(p => p.subcategoria === 'compresor_alta_gama');
+      }
+      neveras.sort((a,b) => a.watts_24h - b.watts_24h || a.precio - b.precio);
+      const { pick: best, error: e } = tryPick(neveras, true, 'nevera');
+      if (e) errors.push(e);
+      else if (best) {
+        const alts = neveras.filter(n => n.id !== best.id);
+        picks.push({
+          producto: best, rol:'nevera',
+          requisitos: ['mantener comida/fría', `autonomía de ${state.autonomia_dias ?? 3} días`],
+          por_que_si: explainNevera(best, state),
+          alternativa_descartada: alts[0]?.nombre ?? 'termoeléctrica',
+          motivo_descarte: alts[0] ? explainNeveraDescarte(alts[0], state) : '',
+        });
+        consume(best);
+      }
+    }
+
+    // ---------- BATERÍA ----------
     const necesitaBateria = state.configuracion_actual === 'desde_cero'
                          || state.aparatos.includes('nevera')
                          || state.aparatos.includes('microondas')
@@ -402,30 +441,31 @@
                          || (state.vehiculo && !state.configuracion_actual);
     if (necesitaBateria) {
       let bats = CATALOG.filter(p => p.categoria === 'baterias');
-      if (state.autonomia_dias && state.autonomia_dias >= 4) bats = bats.filter(p => p.subcategoria === 'lifepo4');
       if (state.autonomia_dias && state.autonomia_dias >= 7) bats = bats.filter(p => p.capacidad_ah >= 200);
-      if (state.presupuesto_eur && state.presupuesto_eur < 350) bats = bats.filter(p => p.precio <= 300);
-      if (state.presupuesto_eur && state.presupuesto_eur < 800 && state.uso === 'finde') bats = bats.filter(p => p.subcategoria === 'agm');
-      if (bats.length === 0) {
-        errors.push('Sin batería compatible con tu caso.');
-      } else {
-        bats.sort((a,b) => {
-          if (a.subcategoria !== b.subcategoria) return a.subcategoria === 'lifepo4' ? -1 : 1;
-          return a.precio - b.precio;
-        });
-        const best = bats[0];
+      // Para autonomia corta con finde, priorizamos AGM (más barato); en otro caso Lifepo4 gana.
+      const prefAgm = state.autonomia_dias && state.autonomia_dias < 4
+                      && (state.uso === 'finde' || !state.uso);
+      bats.sort((a,b) => {
+        const agm = (sub) => sub === 'agm' ? 0 : 1;
+        if (prefAgm) return agm(a.subcategoria) - agm(b.subcategoria) || a.precio - b.precio;
+        return agm(b.subcategoria) - agm(a.subcategoria) || a.precio - b.precio;
+      });
+      const { pick: best, error: e } = tryPick(bats, true, 'batería');
+      if (e) errors.push(e);
+      else if (best) {
+        const alts = bats.filter(p => p.id !== best.id);
         picks.push({
           producto: best, rol:'bateria',
           requisitos: [`autonomía de ${state.autonomia_dias ?? 3} días`].concat(state.aparatos.includes('nevera')?['nevera']:[]),
           por_que_si: explainBateria(best, state),
-          alternativa_descartada: bats[1]?.nombre ?? 'otra opción',
-          motivo_descarte: explainBateriaDescarte(bats[1], state),
+          alternativa_descartada: alts[0]?.nombre ?? 'otra opción',
+          motivo_descarte: explainBateriaDescarte(alts[0], state),
         });
-        presup.total -= best.precio;
+        consume(best);
       }
     }
 
-    // INVERSOR
+    // ---------- INVERSOR ----------
     const picos = (state.aparatos.includes('microondas')?1500:0)
                 + (state.aparatos.includes('cafetera')?1100:0)
                 + (state.aparatos.includes('secador')?1800:0)
@@ -433,33 +473,32 @@
                 + (state.aparatos.includes('aa')?1200:0)
                 + (state.aparatos.includes('nevera')?60:0)
                 + (state.aparatos.includes('portatil')?100:0);
-
     if (picos >= 800) {
       let invs = CATALOG.filter(p => p.categoria === 'inversores');
       invs = invs.filter(p => p.pico_w >= picos * 1.2);
-      if (state.presupuesto_eur && state.presupuesto_eur < 600) invs = invs.filter(p => p.subcategoria === 'economico');
-      if (invs.length === 0) {
-        errors.push(`Ninguno de nuestros inversores aguanta el pico de ${picos} W que suman tus aparatos.`);
-      } else {
-        invs.sort((a,b) => {
-          if (picos >= 1000 && a.calidad !== b.calidad) return a.calidad === 'alta' ? -1 : 1;
-          return a.precio - b.precio;
-        });
-        const best = invs[0];
+      invs.sort((a,b) => {
+        if (picos >= 1000 && a.calidad !== b.calidad) return a.calidad === 'alta' ? -1 : 1;
+        return a.precio - b.precio;
+      });
+      const { pick: best, error: e } = tryPick(invs, true, 'inversor');
+      if (e) errors.push(e);
+      else if (best) {
         const grandes = state.aparatos.filter(a => ['microondas','cafetera','secador','hervidor','aa'].includes(a));
+        const alts = invs.filter(p => p.id !== best.id);
         picks.push({
           producto: best, rol:'inversor',
           requisitos: [`pico de ${picos} W`, ...grandes.map(g => APARATOS.find(a=>a.id===g).label)],
           por_que_si: explainInversor(best, picos, state, grandes),
-          alternativa_descartada: invs[1]?.nombre ?? 'otra opción',
+          alternativa_descartada: alts[0]?.nombre ?? 'otra opción',
           motivo_descarte: 'Pico insuficiente o calidad/precio peor para tu caso.',
         });
-        presup.total -= best.precio;
+        consume(best);
       }
-    } else if (state.aparatos.includes('portatil') || state.uso === 'nomada' && presup.total > 200) {
-      const invs = CATALOG.filter(p => p.categoria === 'inversores' && p.subcategoria === 'economico');
-      if (invs.length > 0 && presup.total > 100) {
-        const best = invs.sort((a,b)=>a.precio-b.precio)[0];
+    } else if (state.aparatos.includes('portatil')) {
+      let invs = CATALOG.filter(p => p.categoria === 'inversores' && p.subcategoria === 'economico');
+      invs.sort((a,b) => a.precio - b.precio);
+      const { pick: best } = tryPick(invs, false, '');
+      if (best) {
         picks.push({
           producto: best, rol:'inversor',
           requisitos: ['cargar portátil y pequeños 230V'],
@@ -467,57 +506,34 @@
           alternativa_descartada: 'Victron Phoenix (calidad alta, innecesaria a este nivel)',
           motivo_descarte: 'Calidad extra se amortiza solo con picos grandes.',
         });
-        presup.total -= best.precio;
+        consume(best);
       }
     }
 
-    // PLACA
+    // ---------- PLACA (opcional) ----------
     if (state.configuracion_actual !== 'equipada') {
       let placas = CATALOG.filter(p => p.categoria === 'placas' && isCompatible(p, state));
-      if (state.presupuesto_eur && state.presupuesto_eur < 1000) placas = placas.filter(p => p.precio <= 200);
-      if (placas.length === 0) {
-        if (state.vehiculo?.tamano !== 'pequeno') errors.push('Sin placa solar que encaje en tu techo o presupuesto.');
-      } else {
-        placas.sort((a,b) => (b.watts_pico/b.precio) - (a.watts_pico/a.precio));
-        const best = placas[0];
+      placas.sort((a,b) => (b.watts_pico/b.precio) - (a.watts_pico/a.precio));
+      const { pick: best } = tryPick(placas, false, '');
+      if (best) {
+        const alts = placas.filter(p => p.id !== best.id);
         picks.push({
           producto: best, rol:'placa',
           requisitos: state.vehiculo?.tamano === 'pequeno' ? ['instalación sin obras'] : ['cargar batería en marcha'],
           por_que_si: `Mejor relación €/W de las opciones disponibles (${best.watts_pico} W por ${best.precio} €).`,
-          alternativa_descartada: placas[1]?.nombre ?? 'otra',
+          alternativa_descartada: alts[0]?.nombre ?? 'otra',
           motivo_descarte: 'Menor potencia por euro o no cabe en tu techo.',
         });
-        presup.total -= best.precio;
+        consume(best);
       }
     }
 
-    // NEVERA
-    if (state.aparatos.includes('nevera') || state.configuracion_actual === 'desde_cero') {
-      let neveras = CATALOG.filter(p => p.categoria === 'neveras' && isCompatible(p, state));
-      if (state.presupuesto_eur && state.presupuesto_eur < 700) neveras = neveras.filter(p => p.precio <= 400);
-      if (state.autonomia_dias && state.autonomia_dias >= 4) neveras = neveras.filter(p => p.subcategoria === 'compresor_alta_gama');
-      if (neveras.length === 0) {
-        errors.push('No hay nevera compatible con tu caso.');
-      } else {
-        neveras.sort((a,b) => a.watts_24h - b.watts_24h || a.precio - b.precio);
-        const best = neveras[0];
-        picks.push({
-          producto: best, rol:'nevera',
-          requisitos: ['mantener comida/fría', `autonomía de ${state.autonomia_dias ?? 3} días`],
-          por_que_si: explainNevera(best, state),
-          alternativa_descartada: neveras[1]?.nombre ?? 'termoeléctrica',
-          motivo_descarte: 'Eficiencia o precio peor para tu autonomía.',
-        });
-        presup.total -= best.precio;
-      }
-    }
-
-    // CALEFACCIÓN
+    // ---------- CALEFACCIÓN (opcional) ----------
     const quiereCalef = state.aparatos.includes('calefaccion')
                      || (['anual','nomada'].includes(state.uso) && (state.autonomia_dias || 0) >= 3);
     if (quiereCalef) {
       const calef = CATALOG.find(p => p.id === 'webasto-air-top-2000');
-      if (calef && presup.total >= calef.precio) {
+      if (calef && fit(calef)) {
         picks.push({
           producto: calef, rol:'calefaccion',
           requisitos: ['clima frío', 'autonomía larga'],
@@ -525,14 +541,16 @@
           alternativa_descartada: 'calentador de gas portátil',
           motivo_descarte: 'Tóxico en interior cerrado (monóxido de carbono).',
         });
-        presup.total -= calef.precio;
+        consume(calef);
+      } else if (tienePresupuesto && calef && presupRestante < calef.precio) {
+        warnings.push(`Calefacción diésel cuesta ${calef.precio} €, no te entra con lo que queda.`);
       }
     }
 
-    // AISLAMIENTO si camperización seria
+    // ---------- AISLAMIENTO (opcional) ----------
     if (state.configuracion_actual === 'desde_cero' || ['anual','nomada'].includes(state.uso)) {
       const ais = CATALOG.find(p => p.id === 'aislamiento-kaiflex-19mm');
-      if (ais && presup.total >= ais.precio) {
+      if (ais && fit(ais)) {
         picks.push({
           producto: ais, rol:'aislamiento',
           requisitos: ['eficiencia energética 12V/230V'],
@@ -540,15 +558,15 @@
           alternativa_descartada: 'lana de roca / reflectivo DIY',
           motivo_descarte: 'Kaiflex aísla y antihumedad en un solo paso.',
         });
-        presup.total -= ais.precio;
+        consume(ais);
       }
     }
 
-    // MONITORIZACIÓN si presup alcanza y tiene nevera/calef/solar
+    // ---------- MONITORIZACIÓN (opcional) ----------
     const quiereMonitor = state.aparatos.includes('nevera') || (state.autonomia_dias || 0) >= 3;
-    if (quiereMonitor && presup.total >= 145) {
+    if (quiereMonitor) {
       const reg = CATALOG.find(p => p.id === 'victron-smartsolar-75-15');
-      if (reg && !picks.find(p => p.producto.id === reg.id)) {
+      if (reg && fit(reg) && !picks.find(p => p.producto.id === reg.id)) {
         picks.push({
           producto: reg, rol:'regulador',
           requisitos: ['cargar batería desde solar'],
@@ -556,15 +574,17 @@
           alternativa_descartada: 'regulador PWM genérico',
           motivo_descarte: 'PWM tira energía en tensiones altas del panel.',
         });
-        presup.total -= reg.precio;
+        consume(reg);
       }
     }
 
     return {
       picks,
       errors,
-      presupRestante: isFinite(presup.total) ? presup.total : null,
+      warnings,
       presupOriginal: state.presupuesto_eur,
+      presupRestante: isFinite(presupRestante) ? Math.max(0, presupRestante) : null,
+      totalEstimado: picks.reduce((s, p) => s + p.producto.precio, 0),
     };
   }
 
@@ -955,6 +975,60 @@
     addBot(naturalConfirmSummary());
     addResultCards(dec, state);
     addChangeOptions(dec, state);
+    // Semilla futura: modo MONTAR — guía paso a paso. Por ahora solo
+    // planta el opt-in y deja claro que está en preparación.
+    setTimeout(() => offerBuildMode(), 400);
+    setInputEnabled(true);
+  }
+
+  // -----------------------------------------------------------------
+  //  FUTURO — modo BUILD ("montarlo tú")
+  // -----------------------------------------------------------------
+  // Arquitectura sembrada. Sin implementación todavía; esto es opt-in
+  // y un teaser. Cuando se monte el módulo real, los hooks son:
+  //  - handleBuildInterest(opt): punto de entrada del opt-in.
+  //  - estado._buildInterest: lo que el usuario quiere (null|'si'|'ahora_no').
+  //  - state ya guarda vehículo, presupuesto, aparatos, configuración;
+  //    bastará con añadir paso actual + items comprados/instalados.
+  // Ver bloque de comentario al final del archivo con el diseño completo.
+  function offerBuildMode() {
+    if (state._buildAsked) return;
+    state._buildAsked = true;
+    addBot(`<p>Una pregunta más, sin compromiso: cuando tengas los componentes, ¿te gustaría que te guiemos paso a paso en el montaje?</p>
+            <p class="chat-build-context">Estilo “Paso 1 de 14: instala el soporte de la batería, necesitas…” + checklist + avisos cuando un paso requiera profesional.</p>`);
+    addQuickReplies([
+      { value:'si',       label:'Sí, me interesa' },
+      { value:'ahora_no', label:'Ahora no' },
+    ], (opt) => handleBuildInterest(opt));
+  }
+
+  function handleBuildInterest(opt) {
+    state._buildInterest = opt.value;
+    if (opt.value === 'si') {
+      addBot(pickOne([
+        'Vale, apuntado. El modo "montarlo tú" lo estamos preparando — instrucciones, lista de herramientas y orden de pasos. Te avisamos cuando esté listo.',
+        'Apuntado. Estamos cocinando las instrucciones de montaje. Por ahora, asegúrate de guardar la configuración y los enlaces de compra; te serán útiles.',
+        'Vale. El modo montaje lo traeremos en próximas semanas. Mientras tanto, los enlaces de compra de cada componente ya están abajo.',
+      ]));
+      addBot(`<div class="chat-build-teaser">
+        <p class="chat-build-teaser-h"><strong>Próximamente — guía de montaje paso a paso</strong></p>
+        <ul class="chat-build-teaser-list">
+          <li>📋 Lista de herramientas y material auxiliar (cables, fusibles, soportes).</li>
+          <li>🪜 Orden recomendado de montaje (los pasos dependen unos de otros).</li>
+          <li>✅ “Comprueba que…” antes de avanzar al siguiente paso.</li>
+          <li>⚠️ Aviso explícito cuando un paso requiera <strong>profesional certificado</strong> (gas, eléctrico estructural, fijaciones a carrocería).</li>
+          <li>📷 Posibilidad de subir una foto para validar el montaje.</li>
+        </ul>
+        <p class="chat-build-note">Es una fase posterior: primero validamos que la decisión (qué comprar) realmente conecta. Si te animas a montarlo antes, te lo decimos cuando esté.</p>
+      </div>`);
+    } else {
+      addBot(pickOne([
+        'Vale, sin prisa. Si cambias de opinión, me lo dices.',
+        'Vale, sin agobios. Nos quedamos con la decisión por ahora.',
+        'Entendido. Si más adelante quieres orientación, te decimos.',
+      ]));
+      addBot(`<p class="chat-build-context">Si prefieres que lo monte un profesional, podemos orientarte en buscar talleres especializados en campers de tu zona más adelante.</p>`);
+    }
     setInputEnabled(true);
   }
 
@@ -1339,3 +1413,48 @@
     setInputEnabled(false);
   });
 })();
+
+/* ====================================================================
+   ARQUITECTURA FUTURA — MODO BUILD ("montarlo-tú")
+   ====================================================================
+   Para cuando se implemente, ya están preparados los hooks:
+
+   DECISION → CONFIGURACIÓN → COMPRAR → (BUILD) → INSTALACIÓN → USE
+
+   Hooks actuales (referenciados arriba):
+     · offerBuildMode()           — pregunta opt-in al final de la decisión
+     · handleBuildInterest(opt)   — guarda state._buildInterest, enseña teaser
+     · state._buildAsked          — para no ofrecer más de una vez por sesión
+     · state._buildInterest       — 'si' | 'ahora_no' | null
+
+   Datos que ya están en state y harán falta:
+     · vehiculo, presupuesto, uso, autonomia
+     · aparatos[]                 qué quiere alimentar
+     · prevDecision.picks[]       qué productos componen la config
+     · confirmados{}              qué campos han sido validados
+
+   Fases planificadas (no implementadas):
+     1. Catálogo de pasos por producto (orden, herramientas, tiempo).
+     2. UI por pasos con checklist obligatorio ("comprueba que X antes
+        de continuar").
+     3. Reglas de seguridad por categoría:
+          - Gas / calentador → profesional obligatorio.
+          - Eléctrico > 48V (inversor, AA) → manual oficial + profesional.
+          - Fijaciones a chasis → par de apriete y validación por taller.
+     4. Subir foto → validación visual (idealmente con revisor humano o
+        modelo de visión con disclaimers).
+     5. Trigger automático: si el usuario añade un aparato mid-proyecto,
+        regenerar los pasos afectados (ej. añadir microondas obliga a
+        revalidar dimensionado eléctrico).
+     6. Cambio de caso: el "Cambiar vehículo / presupuesto / aparato"
+        ya está activo en DECIDE; reutilizable en BUILD cuando un
+        usuario decide ampliar.
+     7. Uso/Upgrade: histórico de cambios, mantenimiento programado,
+        avisos de sustitución de piezas.
+
+   Filosofía de seguridad (a aplicar desde día 1 del modo BUILD):
+     "Te ayudamos a hacerlo tú mismo cuando es razonable. Cuando un
+      paso requiera un profesional, te lo decimos."
+
+   El modo actual solo siembra el opt-in. No promete funcionalidad.
+   ==================================================================== */

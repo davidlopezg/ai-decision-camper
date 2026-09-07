@@ -665,3 +665,43 @@
   .chat-input-area .chat-send { width: 100%; }
   .chat-quick-replies { padding-left: 0; }
 }
+
+/* ==================================================================
+   v3.2 · Teaser del modo BUILD (futuro montarlo-tú)
+   ================================================================== */
+.chat-build-context {
+  margin-top: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+.chat-build-teaser {
+  background: var(--color-accent-bg);
+  border: 1px dashed var(--color-accent);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+.chat-build-teaser-h {
+  margin-top: 0;
+  margin-bottom: var(--space-2);
+  color: var(--color-accent);
+  font-size: 0.95rem;
+}
+.chat-build-teaser-list {
+  margin: 0 0 var(--space-2);
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.chat-build-note {
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
