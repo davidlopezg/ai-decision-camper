@@ -109,11 +109,11 @@
     const help = question.help ? `<p class="chat-bubble-help">${escapeHtml(question.help)}</p>` : '';
     let input = '';
     if (question.type === 'text') {
-      input = `<input type="text" class="chat-text-input" id="chat-q-input"
+      input = `<input type="text" class="chat-text-input"
                 placeholder="${escapeHtml(question.placeholder || '')}"
                 aria-label="Tu respuesta">
-              <button class="btn btn-primary chat-submit" type="button" id="chat-q-submit">Responder →</button>
-              <button class="chat-skip" type="button" id="chat-q-skip">No estoy seguro, pasa</button>`;
+              <button class="btn btn-primary chat-submit" type="button">Responder →</button>
+              <button class="chat-skip" type="button">No estoy seguro, pasa</button>`;
     } else if (question.type === 'choice') {
       const opts = question.options.map(o =>
         `<button class="chat-option" type="button" data-value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</button>`
@@ -150,17 +150,21 @@
 
   function wireQuestionInput(q) {
     if (q.type === 'text') {
-      const input = document.getElementById('chat-q-input');
-      const submit = document.getElementById('chat-q-submit');
-      const skip = document.getElementById('chat-q-skip');
+      // Buscar el input DENTRO de la última burbuja (la actual).
+      // getElementById('#chat-q-input') falla cuando hay varios inputs en el DOM
+      // (uno por cada pregunta de tipo 'text' ya respondida).
+      const bubble = document.getElementById('chat-thread').lastElementChild;
+      const input  = bubble?.querySelector('.chat-text-input');
+      const submit = bubble?.querySelector('.chat-submit');
+      const skip   = bubble?.querySelector('.chat-skip');
       if (input) {
         input.focus();
         input.addEventListener('keydown', e => {
-          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer(q); }
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer(q, input); }
         });
       }
-      if (submit) submit.addEventListener('click', () => submitAnswer(q));
-      if (skip) skip.addEventListener('click', () => submitAnswer(q, true));
+      if (submit) submit.addEventListener('click', () => submitAnswer(q, input));
+      if (skip)   skip.addEventListener('click',   () => submitAnswer(q, input, true));
     } else if (q.type === 'choice') {
       document.querySelectorAll('.chat-bubble-options .chat-option').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -180,8 +184,7 @@
     btn.classList.add('chat-option-selected');
   }
 
-  function submitAnswer(q, skipped = false) {
-    const input = document.getElementById('chat-q-input');
+  function submitAnswer(q, input, skipped = false) {
     const raw = input ? input.value.trim() : '';
     if (!skipped && q.validate && !q.validate(raw)) return;
     const value = skipped ? 'no_specified' : raw;
