@@ -176,25 +176,33 @@
       }
     }
 
-    // Personas
+    // Personas — el número explícito gana sobre heurísticos ("mi mujer" → 2,
+    // pero "somos 3 y mi mujer y mi hija" son 4 personas).
     const NUM_PERSONAS = { un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7 };
-    if (/\b(solo|sola|yo\s+viajo|viajo\s+solo|viajo\s+sola)\b/.test(t) && state.personas === null) {
-      state.personas = 1; updates.push('personas');
-    } else if (/\b(pareja|mi\s+novia|mi\s+novio|mi\s+esposa|mi\s+esposo|mi\s+mujer|mi\s+marido)\b/.test(t) && state.personas === null) {
-      state.personas = 2; updates.push('personas');
-    } else if (/\b(alquilamos|compartimos|con\s+amigos|con\s+un\s+amigo|grupo|familia|con\s+mi\s+hijo|con\s+mi\s+hija|con\s+los\s+niños|con\s+ninos)\b/.test(t) && state.personas === null) {
-      state.personas = 4; updates.push('personas');
-    } else {
-      const perMatch = t.match(/(?:somos|viajamos|para|ocupantes|alquiler)\s*(\d)\b/)
-                    || t.match(/\b(\d)\s*personas?\b/)
-                    || t.match(/\b(\d)\s*adultos?\b/)
-                    || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*personas?\b/)
-                    || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*adultos?\b/);
-      if (perMatch) {
-        let n = parseInt(perMatch[1], 10);
-        if (!n || isNaN(n)) n = NUM_PERSONAS[perMatch[1].toLowerCase()] || 0;
-        if (n >= 1 && n <= 6) {
-          state.personas = n; updates.push('personas');
+    const perMatch = t.match(/(?:somos|viajamos|para|ocupantes|alquiler)\s*(\d+)\b/)
+                  || t.match(/\b(\d+)\s*personas?\b/)
+                  || t.match(/\b(\d+)\s*adultos?\b/)
+                  || t.match(/\b(\d+)\s*gente\b/)
+                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*personas?\b/)
+                  || t.match(/\b(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*adultos?\b/);
+    if (perMatch) {
+      let n = parseInt(perMatch[1], 10);
+      if (!n || isNaN(n)) n = NUM_PERSONAS[perMatch[1].toLowerCase()] || 0;
+      if (n >= 1 && n <= 12) {
+        state.personas = n; updates.push('personas');
+      }
+    } else if (state.personas === null) {
+      // Heurísticos solo cuando NO hay número explícito
+      if (/\b(solo|sola|yo\s+viajo|viajo\s+solo|viajo\s+sola)\b/.test(t)) {
+        state.personas = 1; updates.push('personas');
+      } else if (/\b(alquilamos|compartimos|con\s+amigos|con\s+un\s+amigo|grupo|familia|con\s+los\s+niños|con\s+ninos|con\s+mi\s+cría|con\s+los\s+críos)\b/.test(t)) {
+        state.personas = 4; updates.push('personas');
+      } else if (/\b(pareja|mi\s+novia|mi\s+novio|mi\s+esposa|mi\s+esposo|mi\s+mujer|mi\s+marido)\b/.test(t)) {
+        // mi mujer, pero si también hay hijos → 4 (familia); si no, 2 (pareja)
+        if (/\b(hijo|hija|hijos|hijas|niños|ninos|nino|nina)\b/.test(t)) {
+          state.personas = 4; updates.push('personas');
+        } else {
+          state.personas = 2; updates.push('personas');
         }
       }
     }
@@ -249,6 +257,26 @@
     if (/\b(presupuesto|ajustado|barato|econ[oó]mico|cuesta|poco\s+dinero)\b/.test(t) && !state.prioridades.includes('presupuesto')) state.prioridades.push('presupuesto');
     if (/\b(potencia|microondas|secador|cafetera)\b/.test(t) && !state.prioridades.includes('potencia')) state.prioridades.push('potencia');
     if (/\b(sencill[eo]|simple|f[aá]cil|sin\s+liar)\b/.test(t) && !state.prioridades.includes('sencillez')) state.prioridades.push('sencillez');
+
+    // Respuesta corta: si el input es SOLO un número y la pregunta activa
+    // acepta un número, lo asignamos al campo que toca. Evita el "no te he
+    // pillado bien" cuando el usuario responde "2500" a "¿con qué presupuesto?".
+    const trimmed = texto.trim();
+    const numSolo = trimmed.match(/^(\d{1,3}(?:[.,]\d{3})+|\d{2,6})\s*([€e]|€)?\s*$/);
+    if (numSolo) {
+      const n = parseInt(numSolo[1].replace(/[.,](?=\d)/g, ''), 10);
+      const q = nextQuestion(state);
+      if (q && q.key === 'presupuesto_eur' && n >= 200 && n <= 50000 && state.presupuesto_eur === null) {
+        state.presupuesto_eur = n;
+        updates.push('presupuesto_eur');
+      } else if (q && q.key === 'autonomia_dias' && n >= 1 && n <= 60 && state.autonomia_dias === null) {
+        state.autonomia_dias = n;
+        updates.push('autonomia_dias');
+      } else if (q && q.key === 'personas' && n >= 1 && n <= 12 && state.personas === null) {
+        state.personas = n;
+        updates.push('personas');
+      }
+    }
 
     return { updates, notes, aparatoAdded };
   }
