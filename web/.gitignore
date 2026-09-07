@@ -1,12 +1,10 @@
-# Keys privadas — NO commitear NUNCA
+# Keys privadas — NO commitear
 assets/config.js
-web/assets/config.js
 
-# Páginas temporales de testing
+# Pages temporales de testing
 logo-options.html
 logo-options-2.html
 logo-debug.html
-_assets/
 
 # Sistema
 .DS_Store
